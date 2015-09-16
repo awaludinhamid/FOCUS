@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Document   : spring-security.xml
+    Created on : June 19, 2015, 12:43 PM
+    Author     : awal
+    Description:
+        Purpose of the document follows.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:security="http://www.springframework.org/schema/security"
+ xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+   http://www.springframework.org/schema/security
+   http://www.springframework.org/schema/security/spring-security-3.0.xsd">
+
+ <!-- This is where we configure Spring-Security  -->
+ <security:http auto-config="true" use-expressions="true" access-denied-page="/apps/auth/denied" >
+
+  <security:intercept-url pattern="/apps/auth/login" access="permitAll"/>
+  <security:intercept-url pattern="/apps/main/admin" access="hasRole('ROLE_ADMIN')"/>
+  <security:intercept-url pattern="/apps/main/application" access="hasRole('ROLE_USER')"/>
+  <security:intercept-url pattern="/apps/main/home" access="isAuthenticated()"/>
+  <!-- -->
+  <security:intercept-url pattern="/apps/data/kpi" access="hasRole('ROLE_USER')"/>
+  <security:intercept-url pattern="/apps/data/useraccess" access="hasRole('ROLE_USER')"/>
+  <security:intercept-url pattern="/apps/data/profile" access="hasRole('ROLE_USER')"/>
+  <security:intercept-url pattern="/apps/data/table" access="hasRole('ROLE_ADMIN')"/>
+  <security:intercept-url pattern="/apps/data/table/*" access="hasRole('ROLE_ADMIN')"/>
+
+  <security:form-login
+    login-page="/apps/auth/login"
+    authentication-failure-url="/apps/auth/login?error=true"
+    login-processing-url="/apps/auth/security"
+    default-target-url="/apps/main/home"/>
+
+  <security:logout
+    invalidate-session="true"
+    logout-success-url="/apps/auth/login"
+    logout-url="/apps/auth/logout"/>
+
+ </security:http>
+
+ <!--
+   For authentication:
+   user-search-filter: the attribute name that contains the user name
+      user-search-base: the base path where to find user information
+
+      For authorization:
+      group-search-filter: the attribute name that contains the full dn of a user
+      group-search-base: the base path where to find role information
+      group-role-attribute: the attribute name that contains the role type
+      role-prefix: the prefix to be added when retrieving role values
+
+      For server access:
+      manager-dn: the full dn of the person that has access to an LDAP server
+      manager-password: the password of the person that has access to an LDAP server
+ -->
+
+<!-- ************************ LDAP + DB AUTHENTICATION ********************************* -->
+
+  <!-- local -->
+  <bean id="contextSource"
+          class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
+    <constructor-arg value="ldap://localhost:10389/o=safasoft"/>
+    <property name="userDn" value="uid=admin,ou=system"/>
+    <property name="password" value="secret"/>
+  </bean>
+  <bean id="ldapUserSearch"
+    class="org.springframework.security.ldap.search.FilterBasedLdapUserSearch">
+    <constructor-arg index="0" value=""/>
+    <constructor-arg index="1" value="(uid={0})"/>
+    <constructor-arg index="2" ref="contextSource" />
+  </bean>
+  
+  <!-- FIF 
+  <bean id="contextSource"
+          class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
+    <constructor-arg value="ldap://fif.co.id:389/dc=fif,dc=co,dc=id"/>
+    <property name="userDn" value="ldapuser"/>
+    <property name="password" value="digital"/>
+  </bean>
+  <bean id="ldapUserSearch"
+    class="org.springframework.security.ldap.search.FilterBasedLdapUserSearch">
+    <constructor-arg index="0" value=""/>
+    <constructor-arg index="1" value="(&amp;(objectClass=user)(sAMAccountName={0}))"/>
+    <constructor-arg index="2" ref="contextSource" />
+  </bean>
+  -->
+  <bean id="ldapAuthProvider"
+      class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
+    <constructor-arg>
+      <bean class="org.springframework.security.ldap.authentication.BindAuthenticator">
+        <constructor-arg ref="contextSource"/>
+        <property name="userSearch" ref="ldapUserSearch" />
+      </bean>
+    </constructor-arg>
+    <constructor-arg>
+      <bean class="com.safasoft.treeweb.auth.CustomLdapAuthoritiesPopulator">
+      </bean>
+    </constructor-arg>
+  </bean>
+  <security:authentication-manager>
+    <security:authentication-provider ref="ldapAuthProvider" />
+  </security:authentication-manager>
+
+</beans>
