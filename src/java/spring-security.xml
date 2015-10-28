@@ -21,14 +21,13 @@
 
   <security:intercept-url pattern="/apps/auth/login" access="permitAll"/>
   <security:intercept-url pattern="/apps/main/admin" access="hasRole('ROLE_ADMIN')"/>
-  <security:intercept-url pattern="/apps/main/application" access="hasRole('ROLE_USER')"/>
+  <security:intercept-url pattern="/apps/main/application/**" access="hasRole('ROLE_USER')"/>
   <security:intercept-url pattern="/apps/main/home" access="isAuthenticated()"/>
+  <security:intercept-url pattern="/apps/main/upload" access="hasRole('ROLE_MEMBER')"/>
   <!-- -->
-  <security:intercept-url pattern="/apps/data/kpi" access="hasRole('ROLE_USER')"/>
-  <security:intercept-url pattern="/apps/data/useraccess" access="hasRole('ROLE_USER')"/>
-  <security:intercept-url pattern="/apps/data/profile" access="hasRole('ROLE_USER')"/>
-  <security:intercept-url pattern="/apps/data/table" access="hasRole('ROLE_ADMIN')"/>
-  <security:intercept-url pattern="/apps/data/table/*" access="hasRole('ROLE_ADMIN')"/>
+  <security:intercept-url pattern="/apps/data/**" access="hasRole('ROLE_USER')"/>
+  <security:intercept-url pattern="/apps/data/table/**" access="hasRole('ROLE_ADMIN')"/>
+  <security:intercept-url pattern="/apps/data/upload" access="hasRole('ROLE_MEMBER')"/>
 
   <security:form-login
     login-page="/apps/auth/login"
@@ -61,7 +60,7 @@
 
 <!-- ************************ LDAP + DB AUTHENTICATION ********************************* -->
 
-  <!-- local -->
+  <!-- local 
   <bean id="contextSource"
           class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
     <constructor-arg value="ldap://localhost:10389/o=safasoft"/>
@@ -74,8 +73,8 @@
     <constructor-arg index="1" value="(uid={0})"/>
     <constructor-arg index="2" ref="contextSource" />
   </bean>
-  
-  <!-- FIF 
+  -->
+  <!-- FIF -->
   <bean id="contextSource"
           class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
     <constructor-arg value="ldap://fif.co.id:389/dc=fif,dc=co,dc=id"/>
@@ -88,7 +87,7 @@
     <constructor-arg index="1" value="(&amp;(objectClass=user)(sAMAccountName={0}))"/>
     <constructor-arg index="2" ref="contextSource" />
   </bean>
-  -->
+  
   <bean id="ldapAuthProvider"
       class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
     <constructor-arg>

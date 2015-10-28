@@ -9,7 +9,7 @@ import com.safasoft.treeweb.bean.UserAccess;
 import java.util.List;
 
 /**
- *
+ * User access model sewrvice
  * @author awal
  */
 public interface UserAccessService {

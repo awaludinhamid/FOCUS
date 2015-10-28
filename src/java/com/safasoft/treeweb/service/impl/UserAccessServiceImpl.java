@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
+ * User access service model implementation
  * @created Aug 31, 2015
  * @author awal
  */
@@ -24,6 +25,7 @@ public class UserAccessServiceImpl implements UserAccessService {
   @Autowired
   private UserAccessDAO userAccessDAO;
 
+  @Override
   public List<UserAccess> getAll() {
     return userAccessDAO.getAll();
   }

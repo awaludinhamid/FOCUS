@@ -1,6 +1,6 @@
 var list_dts = [{"name":"Daily","code":"D"},{"name":"Monthly","code":"M"},{"name":"Realtime","code":"R"}];
 var list_coy = [{"name":"FIF","code":"01"},{"name":"AMF","code":"02"},{"name":"MGS","code":"03"}];
-var list_lob = [{"name":"NMC","code":"nmc"},{"name":"UMC","code":"umc"},{"name":"MPF","code":"mpf"},{"name":"REFI","code":"refi"}];
+var list_lob = [{"name":"NMC","code":"nmc"},{"name":"UMC","code":"umc"},{"name":"MPF","code":"mpf"},{"name":"UFI","code":"refi"}];
 var list_reg_nas_00000 = [{"name":"REGION 1","code":"NMC01"},{"name":"REGION 2","code":"NMC02"},{"name":"REGION 3","code":"NMC03"},{"name":"REGION 4","code":"NMC04"},{"name":"REGION 5","code":"NMC05"},{"name":"REGION 6","code":"NMC06"}];
 var list_mm_mdlr_MD001 = [{"name":"DAVID KURNIANTO","code":"MM018"}];
 var list_mm_mdlr_MD002 = [{"name":"FX BASUKI HARDJONO","code":"MM034"}];

@@ -9,17 +9,24 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
+ * Session template when accessing database via java bean
  * @created Mar 31, 2013
  * @author awal
  */
 public class SessionUtil<T> {
 
-    private static final ApplicationContext appContext =
-            new ClassPathXmlApplicationContext("applicationContext.xml");
+  //spring context
+  private static final ApplicationContext appContext =
+    new ClassPathXmlApplicationContext("applicationContext.xml");
 
-    public T getAppContext(String beanName) {
-        T t = (T) appContext.getBean(beanName);
-        return t;
-    }
+  /**
+   * Get connection for current java bean
+   * @param beanName
+   * @return service class
+   */
+  public T getAppContext(String beanName) {
+    T t = (T) appContext.getBean(beanName);
+    return t;
+  }
 
 }

@@ -6,30 +6,37 @@
 package com.safasoft.treeweb.dao;
 
 
-import com.safasoft.treeweb.bean.ColumnPropTemp;
-import com.safasoft.treeweb.bean.ListDataTemp;
-import com.safasoft.treeweb.bean.ListKpiTemp;
-import com.safasoft.treeweb.bean.TableContentTemp;
+import com.safasoft.treeweb.bean.support.ColumnProp;
+import com.safasoft.treeweb.bean.support.ListKpi;
+import com.safasoft.treeweb.bean.support.TableContent;
 import com.safasoft.treeweb.bean.Users;
+import com.safasoft.treeweb.bean.support.ColumnCons;
 import com.safasoft.treeweb.bean.support.ListBean;
+import com.safasoft.treeweb.bean.support.TableValue;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import com.safasoft.treeweb.util.BaseDAO;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Repository;
 
 /**
+ * Users DAO
+ * A custom DAO for accessing data from the database.
  * @created Jun 22, 2015
  * @author awal
- */
-
-/**
- * A custom DAO for accessing data from the database.
- *
  */
 @Repository("usersDAO")
 public class UsersDAO extends BaseDAO<Users> {
 
+  
+  private final String DELIMITER_COL = ",";
+  /**
+   * Generate user profile (access to view data: layer, level, etc)
+   * @param userName
+   * @return list of UserProfileBean
+   */
   public List<UserProfileBean> getUserProfile(String userName) {
     return sessionFactory.getCurrentSession().createSQLQuery(
             "SELECT ROWNUM id, user_name, layer_code dept_code, layer_name dept_name, layer_code||'-'||level_code member_code, level_desc member_name, " +
@@ -41,7 +48,7 @@ public class UsersDAO extends BaseDAO<Users> {
                 "FROM ( " +
                 "SELECT lum.user_name, ml.layer_code, ml.layer_name, mlv.level_code, mlv.level_desc, " +
                   "DECODE(mlv.level_id,4,mn1.fifapps_code||'p',mn1.fifapps_code) fifapps_code, mn1.node_name, " +
-                  "nna.node_child, nna.node_parent, mn.level_id mn_level_id, lum.level_id lum_level_id " +
+                  "nna.node_child, nna.node_parent, mn.level_id mn_level_id, mn1.level_id mn1_level_id " +
                   "FROM mst_layer ml, mst_level mlv, mst_node mn, node_node_assc nna, layer_user_map lum, mst_node mn1 " +
                   "WHERE lum.user_name = :userName " +
                     "AND ml.layer_id = lum.layer_id " +
@@ -50,16 +57,27 @@ public class UsersDAO extends BaseDAO<Users> {
                     "AND mn.node_id = nna.node_child " +
                     "AND lum.node_id = mn1.node_id) " +
                 "CONNECT BY PRIOR node_child = node_parent " +
-                "START WITH mn_level_id = lum_level_id " +
+                "START WITH mn_level_id = mn1_level_id " +
 		"ORDER BY layer_name, lvl)")
             .addEntity(UserProfileBean.class)
             .setString("userName", userName)
             .list();
   }
 
-  public List<ListKpiTemp> getListKpi(String dept, String members, String coy, String lob, String dtsTable, String dtsTableLastMonth) {
+  /**
+   * Generate list of KPI data, breakdown by KPI hierarchy
+   * @param dept
+   * @param members
+   * @param coy
+   * @param lob
+   * @param dtsTable
+   * @param dtsTableLastMonth
+   * @return list of ListKpi object
+   */
+  public List<ListKpi> getListKpi(String dept, String members, String coy, String lob, String dtsTable, String dtsTableLastMonth) {
     return sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, target, actual, last_month, achieve, growth, url, dept, " +
+            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, url, dept, " +
+              "NVL(target,0) target, NVL(actual,0) actual, NVL(last_month,0) last_month, NVL(achieve,0) achieve, NVL(growth,0) growth, " +
               "CASE " +
                 "WHEN parent = -1 THEN 'cyan' " +
                 "WHEN (data_kpi IS NULL OR actual = 0 OR type_kpi = 'N') THEN 'grey' " +
@@ -184,7 +202,7 @@ public class UsersDAO extends BaseDAO<Users> {
                     "CONNECT BY PRIOR child_id = parent_id) kpi " +
                 "WHERE data.kpi (+) = kpi.child_id) " +
               "ORDER BY lvl DESC, parent, name")
-            .addEntity(ListKpiTemp.class)
+            .addEntity(ListKpi.class)
             .setString("dept", dept)
             .setString("members", members)
             .setString("coy", coy)
@@ -192,9 +210,22 @@ public class UsersDAO extends BaseDAO<Users> {
             .list();
   }
 
-  public List<ListKpiTemp> getListKpi(String dept, String members, String coy, String lob, String kpi, String dtsTable, String dtsTableLastMonth) {
+  /**
+   * Generate list of KPI data, breakdown by level member (area, branch, marketing head, etc)
+   * @param dept
+   * @param members
+   * @param coy
+   * @param kpi
+   * @param lob
+   * @param dtsTable
+   * @param dtsTableLastMonth
+   * @return list of ListKpi object
+   */
+
+  public List<ListKpi> getListKpi(String dept, String members, String coy, String lob, String kpi, String dtsTable, String dtsTableLastMonth) {
     return sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, target, actual, last_month, url, dept, achieve, growth, " +
+            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, url, dept, " +
+              "NVL(target,0) target, NVL(actual,0) actual, NVL(last_month,0) last_month, NVL(achieve,0) achieve, NVL(growth,0) growth, " +
               "CASE " +
                 "WHEN parent = -1 THEN 'cyan' " +
                 "WHEN (data_id IS NULL OR actual = 0 OR type_kpi = 'N') THEN 'grey' " +
@@ -302,7 +333,7 @@ public class UsersDAO extends BaseDAO<Users> {
                 ") data " +
                 "WHERE data.id (+) = mst.id " +
                 "ORDER BY lvl DESC, mst.parent, mst.name)")
-            .addEntity(ListKpiTemp.class)
+            .addEntity(ListKpi.class)
             .setString("dept", dept)
             .setString("members", members)
             .setString("coy", coy)
@@ -311,58 +342,136 @@ public class UsersDAO extends BaseDAO<Users> {
             .list();
   }
   
-  public TableContentTemp getListTableValue(String tableName, int pageNo) {
+  /**
+   * Generate list of table properties (column, constraint, etc) and value (data, maximum id, etc) by current page no
+   * @param tableName
+   * @param pageNo
+   * @return TableContent object
+   */
+  public TableContent getListTableContentByPage(String tableName, int pageNo) {
+    //
     int resultPerPage = 10;
     int firstResult = (pageNo - 1) * resultPerPage;
     int maxId = 0;
-    ColumnPropTemp cptId = null;
-    String delimiter = "||'|'||";
-    List<ColumnPropTemp> columnProp = getListColumn(tableName);
-    StringBuilder columns = new StringBuilder("");
-    for(ColumnPropTemp cpt : columnProp) {
-      columns.append(cpt.getColumnName());
-      columns.append(delimiter);
-      if(cpt.getConstraintType().equals("P"))
-        cptId = cpt;
+    Map<String,List<ListBean>> dropDownListMap = new HashMap<String,List<ListBean>>();
+    Map<String,List<ColumnCons>> columnConsMap = new HashMap<String,List<ColumnCons>>();
+    List<ColumnProp> columnsProp = getListColumnProp(tableName);
+    ColumnProp columnPK = getPKColumn(tableName,columnsProp);
+    Map<String,String> columnSerialMap = getColumnsSerial(columnsProp,columnPK);
+    String orderByColumn = getOrderByColumn(tableName,columnsProp,columnPK);
+    // generate column constraint list and its dropdown list (specific to constraint type = R)
+    for(ColumnProp cp : columnsProp) {
+      List<ColumnCons> columnCons = getListColumnCons(tableName,cp.getColumnName());
+      columnConsMap.put(cp.getColumnName(),columnCons);
+      for(ColumnCons cc : columnCons) {
+        if(cc.getConstraintType().equals("R")) 
+          dropDownListMap.put(cp.getColumnName(),getListDdl(cc.getTableRef(),cc.getColumn1Ref(),cc.getColumn2Ref()));
+      }
     }
-    List<ListDataTemp> contents = sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT " +
-              (cptId == null ? "ROWID" : 
-                (cptId.getDataType().equals("NUMBER") ? "TO_CHAR(" + cptId.getColumnName() + ")" : cptId.getColumnName())) + " id, " +
-              columns.substring(0, columns.lastIndexOf(delimiter)) + " group_text " +
+    // generate list of data
+    List<TableValue> contents = sessionFactory.getCurrentSession().createSQLQuery(
+            "SELECT " + columnSerialMap.get("columnsSerialExt") + " " +
               "FROM " + tableName + " " +
-              "ORDER BY " + (cptId == null ? "group_text" : cptId.getColumnName()))
-            .addEntity(ListDataTemp.class)
+              "ORDER BY " + orderByColumn)
+            .addEntity(TableValue.class)
             .setFirstResult(firstResult)
             .setMaxResults(resultPerPage)
             .list();
+    // generate maximum page and maximum id (specific to PK with NUMBER datatype)
     BigDecimal bd = (BigDecimal) sessionFactory.getCurrentSession().createSQLQuery(
             "SELECT COUNT(*) cnt FROM " + tableName)
             .list()
             .get(0);
     int recordCount = bd.intValue();
     int maxPage = recordCount == 0 ? 1 : (recordCount/resultPerPage + (recordCount%resultPerPage == 0 ? 0 : 1));
-    if(cptId != null && cptId.getDataType().equals("NUMBER")) {
+    if(columnPK != null && columnPK.getDataType().equals("NUMBER")) {
       BigDecimal bdm = (BigDecimal) sessionFactory.getCurrentSession().createSQLQuery(
-              "SELECT MAX("+cptId.getColumnName()+")+1 max_id FROM " + tableName)
+              "SELECT NVL(MAX("+columnPK.getColumnName()+"),0)+1 max_id FROM " + tableName)
               .list()
               .get(0);
       maxId = bdm.intValue();
     }
-    TableContentTemp tct = new TableContentTemp();
-    tct.setColumns(columnProp);
+    // filling object into table
+    TableContent tct = new TableContent();
+    tct.setColumns(columnsProp);
     tct.setContents(contents);
     tct.setMaxPage(maxPage);
     tct.setMaxId(maxId);
+    tct.setDropDownList(dropDownListMap);
+    tct.setColumnsCons(columnConsMap);
+    tct.setColumnsSerial(columnSerialMap.get("columnsSerial"));
+    tct.setColumnsSerialExt(columnSerialMap.get("columnsSerialExt"));
+    tct.setOrderByColumn(orderByColumn);
+    tct.setIdColumn(columnPK == null ? "" : columnPK.getColumnName());
     return tct;
   }
 
+  /**
+   * Execute SQL statement into database
+   * @param sql 
+   */
   public void saveTable(String sql) {
     sessionFactory.getCurrentSession().createSQLQuery(sql).executeUpdate();
-
+  }
+  
+  /**
+   * Generate list of given table value 
+   * @param tableName
+   * @param columnsSerialExt
+   * @param orderByColumn
+   * @return list of TableValue object
+   */
+  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn) {
+    // generate value
+    return sessionFactory.getCurrentSession().createSQLQuery(
+            "SELECT " + columnsSerialExt +
+              " FROM " + tableName +
+              " ORDER BY " + orderByColumn)
+            .addEntity(TableValue.class)
+            .list();
+  }
+  
+  /**
+   * Generate page no of current record (id)
+   * @param tableName
+   * @param id
+   * @param columnsSerialExt
+   * @param orderByColumn
+   * @return Integer value
+   */
+  public Integer getPageNo(String tableName, String id, String columnsSerialExt, String orderByColumn) {
+    BigDecimal bdm = (BigDecimal) sessionFactory.getCurrentSession().createSQLQuery(
+            "SELECT CEIL(rnum/10) page_no " +
+              "FROM ( " +
+                "SELECT ROWNUM rnum, id " +
+                "FROM ( " +
+                "SELECT " + columnsSerialExt + " " +
+                  "FROM " + tableName + " " +
+                  "ORDER BY " + orderByColumn + ")) " +
+              "WHERE id = :id")
+            .setString("id",id)
+            .list()
+            .get(0);
+    return bdm.intValue();
+  }
+  
+  /**
+   * Get user who has access on table upload
+   * @param tableName
+   * @return 
+   */
+  public String getUploadTableAccess(String tableName) {
+    return (String) sessionFactory.getCurrentSession().createSQLQuery(
+            "SELECT user_access " +
+              "FROM ff_upload_table " +
+              "WHERE table_name = :tableName " +
+                "AND ROWNUM = 1")
+            .setString("tableName", tableName)
+            .list().get(0);
   }
 
-  public List<ListBean> getListDdl(String tableName, String code, String name) {
+  // Generate drop down list value (code and name) of given table
+  private List<ListBean> getListDdl(String tableName, String code, String name) {
     return sessionFactory.getCurrentSession().createSQLQuery(
             "SELECT " + code + " code, " + name + " name " +
               "FROM " + tableName + " " +
@@ -371,37 +480,109 @@ public class UsersDAO extends BaseDAO<Users> {
             .list();
   }
 
-  private List<ColumnPropTemp> getListColumn(String tableName) {
+  // Generate column property list of given table
+  private List<ColumnProp> getListColumnProp(String tableName) {
     return sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT utc.column_id, utc.column_name, utc.data_type, NVL(uc.constraint_type,'N') constraint_type, NVL(( " +
-              "SELECT ucc1.table_name " +
-                "FROM user_cons_columns ucc1 " +
-                "WHERE ucc1.constraint_name = uc.r_constraint_name " +
-                  "AND ROWNUM = 1),'N/A') table_ref, NVL(( " +
-              "SELECT utc1.column_name " +
-                "FROM user_tab_cols utc1, user_cons_columns ucc2 " +
-                "WHERE utc1.column_id = 1 " +
-                  "AND ucc2.constraint_name = uc.r_constraint_name " +
-                  "AND utc1.table_name = ucc2.table_name " +
-                  "AND ROWNUM = 1),'N/A') column1_ref, NVL(( " +
-              "SELECT utc2.column_name " +
-                "FROM user_tab_cols utc2, user_cons_columns ucc3 " +
-                "WHERE utc2.column_id = 2 " +
-                  "AND ucc3.constraint_name = uc.r_constraint_name " +
-                  "AND utc2.table_name = ucc3.table_name " +
-                  "AND ROWNUM = 1),'N/A') column2_ref " +
-              "FROM user_tab_cols utc " +
-                  ",user_cons_columns ucc " +
-                  ",user_constraints uc " +
-              "WHERE utc.table_name = :tableName " +
-                "AND utc.table_name = ucc.table_name (+) " +
-                "AND utc.column_name = ucc.column_name (+) " +
-                "AND uc.table_name (+) = ucc.table_name " +
-                "AND uc.constraint_name (+) = ucc.constraint_name " +
-              "ORDER BY utc.column_id")
-            .addEntity(ColumnPropTemp.class)
+            "SELECT column_id, column_name, data_type " +
+"              FROM user_tab_cols " +
+"              WHERE table_name = :tableName " +
+"              ORDER BY column_id")
+            .addEntity(ColumnProp.class)
             .setString("tableName", tableName)
             .list();
   }
 
+  // Generate column constraint list of given table and column
+  private List<ColumnCons> getListColumnCons(String tableName, String columnName) {
+    return sessionFactory.getCurrentSession().createSQLQuery(
+            "SELECT uc.constraint_name, uc.constraint_type, " +
+              "CASE WHEN uc.constraint_type = 'R' THEN ( " +
+                "SELECT ucc1.table_name " +
+                  "FROM user_cons_columns ucc1 " +
+                  "WHERE ucc1.constraint_name = uc.r_constraint_name " +
+                    "AND ROWNUM = 1) " +
+                "ELSE 'N/A' " +
+              "END table_ref, " +
+              "CASE WHEN uc.constraint_type = 'R' THEN ( " +
+                "SELECT utc1.column_name " +
+                  "FROM user_tab_cols utc1, user_cons_columns ucc2 " +
+                  "WHERE utc1.column_id = 1 " +
+                    "AND ucc2.constraint_name = uc.r_constraint_name " +
+                    "AND utc1.table_name = ucc2.table_name " +
+                    "AND ROWNUM = 1) " +
+                "ELSE 'N/A' " +
+              "END column1_ref, " +
+              "CASE WHEN uc.constraint_type = 'R' THEN ( " +
+                "SELECT utc2.column_name " +
+                  "FROM user_tab_cols utc2, user_cons_columns ucc3 " +
+                  "WHERE utc2.column_id = 2 " +
+                    "AND ucc3.constraint_name = uc.r_constraint_name " +
+                    "AND uc.constraint_type = 'R' " +
+                    "AND utc2.table_name = ucc3.table_name " +
+                    "AND ROWNUM = 1) " +
+                "ELSE 'N/A' " +
+              "END column2_ref " +
+              "FROM user_constraints uc " +
+                  ",user_cons_columns ucc " +
+              "WHERE ucc.table_name = :tableName " +
+                "AND ucc.column_name = :columnName " +
+                "AND ucc.table_name = uc.table_name " +
+                "AND ucc.constraint_name = uc.constraint_name")
+            .addEntity(ColumnCons.class)
+            .setString("tableName", tableName)
+            .setString("columnName", columnName)
+            .list();
+  }
+  
+  // Generate column serial used in ORDER BY clause
+  // (i.e. this method return 'column1, column2', append to ORDER BY, its became 'ORDER BY column1, column2')
+  private String getOrderByColumn(String tableName, List<ColumnProp> columnsProp, ColumnProp columnPK) {
+    if(columnsProp.size() > 0) {
+      StringBuilder orderByColumn = new StringBuilder("");
+      for(ColumnProp cp : columnsProp)
+        orderByColumn.append(cp.getColumnName()).append(DELIMITER_COL);
+      return (columnPK == null ? orderByColumn.substring(0, orderByColumn.lastIndexOf(DELIMITER_COL)) : tableName+"."+columnPK.getColumnName());
+    }
+    return "1";
+  }
+  
+  // Generate column serial used in SELECT statement
+  // (i.e. this method return 'column1, column2', append to SELECT, so its became 'SELECT column1, column2')  
+  private Map<String,String> getColumnsSerial(List<ColumnProp> columnsProp, ColumnProp columnPK) {
+    int maxCol = 20;//maximum available column per table
+    Map<String,String> columnSerialMap = new HashMap<String,String>();
+    StringBuilder sbExt = new StringBuilder();
+    StringBuilder sb = new StringBuilder();
+    for(int idx = 0; idx < columnsProp.size() && idx < maxCol; idx++) {
+      if(columnsProp.get(idx).getDataType().equals("NUMBER"))
+        sbExt.append("TO_CHAR(").append(columnsProp.get(idx).getColumnName()).append(")");
+      else if(columnsProp.get(idx).getDataType().equals("DATE"))
+        sbExt.append("TO_CHAR(").append(columnsProp.get(idx).getColumnName()).append(",'DD-MON-YY')");
+      else
+        sbExt.append(columnsProp.get(idx).getColumnName());
+      sbExt.append(" col").append(idx+1).append(DELIMITER_COL);
+      sb.append(columnsProp.get(idx).getColumnName()).append(DELIMITER_COL);
+    }
+    for(int idx = columnsProp.size(); idx < maxCol; idx++)
+      sbExt.append(" NULL col").append(idx+1).append(DELIMITER_COL);
+    columnSerialMap.put("columnsSerialExt",(columnPK == null ? "ROWID" : 
+              (columnPK.getDataType().equals("NUMBER") ? "TO_CHAR(" + columnPK.getColumnName() + ")" :
+              columnPK.getColumnName())) +
+            " id, " +
+            sbExt.substring(0, sbExt.lastIndexOf(DELIMITER_COL)));
+    columnSerialMap.put("columnsSerial",sb.substring(0, sb.lastIndexOf(DELIMITER_COL)));
+    return columnSerialMap;
+  }
+
+  // Generate PK column of given table
+  private ColumnProp getPKColumn(String tableName, List<ColumnProp> columnsProp) {
+    for(ColumnProp cp : columnsProp) {
+      List<ColumnCons> columnCons = getListColumnCons(tableName,cp.getColumnName());
+      for(ColumnCons cc : columnCons) {
+        if(cc.getConstraintType().equals("P"))
+          return cp;
+      }
+    }
+    return null;
+  }
 }

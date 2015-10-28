@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
+ * Master data time series service model implementation
  * @created Aug 26, 2015
  * @author awal
  */
@@ -24,10 +25,12 @@ public class MstDtsServiceImpl implements MstDtsService {
   @Autowired
   private MstDtsDAO mstDtsDAO;
 
+  @Override
   public MstDts getByCode(String dtsCode) {
     return mstDtsDAO.getByCode(dtsCode);
   }
 
+  @Override
   public List<MstDts> getAll() {
     return mstDtsDAO.getAll();
   }

@@ -10,6 +10,7 @@ import com.safasoft.treeweb.util.BaseDAO;
 import org.springframework.stereotype.Repository;
 
 /**
+ * User access DAO
  * @created Aug 31, 2015
  * @author awal
  */

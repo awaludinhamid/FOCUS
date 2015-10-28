@@ -1,9 +1,10 @@
 /*
- * To change this template, choose Tools | Templates
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
 
-package com.safasoft.treeweb.bean;
+package com.safasoft.treeweb.bean.support;
 
 import java.io.Serializable;
 import javax.persistence.Column;
@@ -11,19 +12,16 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 /**
- * @created Sep 9, 2015
+ * Column constraint store
+ * @created Sep 18, 2015
  * @author awal
  */
 @Entity
-public class ColumnPropTemp implements Serializable {
+public class ColumnCons implements Serializable {
 
   @Id
-  @Column(name="COLUMN_ID")
-  private int columnId;
-  @Column(name="COLUMN_NAME")
-  private String columnName;
-  @Column(name="DATA_TYPE")
-  private String dataType;
+  @Column(name="CONSTRAINT_NAME")
+  private String constraintName;
   @Column(name="CONSTRAINT_TYPE")
   private String constraintType;
   @Column(name="TABLE_REF")
@@ -32,48 +30,6 @@ public class ColumnPropTemp implements Serializable {
   private String column1Ref;
   @Column(name="COLUMN2_REF")
   private String column2Ref;
-
-  /**
-   * @return the columnId
-   */
-  public int getColumnId() {
-    return columnId;
-  }
-
-  /**
-   * @param columnId the columnId to set
-   */
-  public void setColumnId(int columnId) {
-    this.columnId = columnId;
-  }
-
-  /**
-   * @return the columnName
-   */
-  public String getColumnName() {
-    return columnName;
-  }
-
-  /**
-   * @param columnName the columnName to set
-   */
-  public void setColumnName(String columnName) {
-    this.columnName = columnName;
-  }
-
-  /**
-   * @return the dataType
-   */
-  public String getDataType() {
-    return dataType;
-  }
-
-  /**
-   * @param dataType the dataType to set
-   */
-  public void setDataType(String dataType) {
-    this.dataType = dataType;
-  }
 
   /**
    * @return the constraintType
@@ -129,6 +85,20 @@ public class ColumnPropTemp implements Serializable {
    */
   public void setColumn2Ref(String column2Ref) {
     this.column2Ref = column2Ref;
+  }
+
+  /**
+   * @return the constraintName
+   */
+  public String getConstraintName() {
+    return constraintName;
+  }
+
+  /**
+   * @param constraintName the constraintName to set
+   */
+  public void setConstraintName(String constraintName) {
+    this.constraintName = constraintName;
   }
 
 }

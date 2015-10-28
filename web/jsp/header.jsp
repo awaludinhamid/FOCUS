@@ -8,19 +8,6 @@
 <%@taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
 <%@taglib uri="http://www.springframework.org/tags" prefix="spring" %>
 <%@taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
-<%  String cnname = "";
-    String uid = "";
-    try {
-      String principal = request.getUserPrincipal().toString();
-      int start = principal.indexOf("cn=");
-      String tmp = principal.substring(start + 3);
-      int end = tmp.indexOf(",");
-      cnname = tmp.substring(0,end);
-      uid = request.getUserPrincipal().getName();
-    } catch(NullPointerException npe) {
-      System.out.println(npe);
-    }
-%>
 
 <!DOCTYPE html>
 <html>
@@ -39,6 +26,9 @@
     <title>FIFGROUP Control System</title>
   </head>
   <body>
+    <div class="left-back-pos back-def-style" hidden></div>
+    <div class="split-back back-def-style" hidden></div>
+    <div class="center-back-pos back-def-style" hidden></div>
     <div id="insetBgd">
       <div id="logo">
         <a href="http://www.fifgroup.co.id"><img src="../../img/logo FIFGROUP vertical.png" alt="FIFGROUP" width="61" height="64"/></a>
@@ -49,11 +39,13 @@
       </div>
       <div id="logUser">
         <!--sec:authentication property="principal.username"/-->
-        <span id="cnname" hidden><%=cnname%></span>
-        <span id="uid" hidden><%=uid%></span>
+        <span id="cnname" hidden>${sessionScope.cnname}</span>
+        <span id="uid" hidden>${sessionScope.uid}</span>
         <div id="userMenu" class="btn-group">
         </div>
-        <h4><span id="layer" class="label label-default full-width" style="float: right"></span></h4>
+      </div>
+      <div id="right-title">
+        <h4 style="opacity: 0.9"><span class="label label-primary full-width"></span></h4>
       </div>
       <div>
         <span class="insetType">FIFGROUP Control System </span>
@@ -69,11 +61,11 @@
             <h4 class="modal-title" id="myModalLabel">Logout</h4>
           </div>
           <div class="modal-body">
-            <span>Do you really want to logout?</span>
+            <span>Do you really want to logout?</span>          
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
-            <button id="btn-ok" type="button" class="btn btn-primary" data-dismiss="modal">Yes</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">No</button>
+            <button id="btn-yes" type="button" class="btn btn-primary" data-dismiss="modal">Yes</button>
           </div>
         </div>
       </div>

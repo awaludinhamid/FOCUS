@@ -28,7 +28,7 @@
     var lblStyle = btnPrimary+" "+glyTags; //label style
     var pickStyle = btnPrimary+" "+glyTriDown; //chosen style
     var unpickStyle = btnDefault+" "+glyClose; //unchosen style
-    var bkLabel = "#347"; //label background color
+    var bkLabel = "#444";//"#347"; //label background color
     var bkColPick = "#99b"; //chosen background color
     var bkColUnpick = "#fff"; //unchosen background color
     var translation = 400; //waktu perubahan show/hide

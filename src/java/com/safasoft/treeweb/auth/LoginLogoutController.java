@@ -5,6 +5,7 @@
 
 package com.safasoft.treeweb.auth;
 
+import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
+ * Login controller
  * @created Jun 19, 2015
  * @author awal
  */
@@ -29,11 +31,14 @@ public class LoginLogoutController {
  /**
   * Handles and retrieves the login JSP page
   *
+  * @param error
+  * @param model
+  * @param httpRequest
   * @return the name of the JSP page
   */
  @RequestMapping(value = "/login", method = RequestMethod.GET)
  public String getLoginPage(@RequestParam(value="error", required=false) boolean error,
-   ModelMap model) {
+   ModelMap model, HttpServletRequest httpRequest) {
   logger.debug("Received request to show login page");
 
   // Add an error message to the model if login is unsuccessful
@@ -50,6 +55,7 @@ public class LoginLogoutController {
    model.put("error", "You have entered an invalid username or password!");
   } else {
    model.put("error", "");
+   httpRequest.getSession().setAttribute("cnname","");
   }
 
   // This will resolve to /jsp/loginpage.jsp
@@ -57,8 +63,7 @@ public class LoginLogoutController {
  }
 
  /**
-  * Handles and retrieves the denied JSP page. This is shown whenever a regular user
-  * tries to access an admin only page.
+  * Handles and retrieves the denied JSP page. This is shown whenever user tries to access the unauthorized page.
   *
   * @return the name of the JSP page
   */

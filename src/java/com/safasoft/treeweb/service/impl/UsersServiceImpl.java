@@ -5,10 +5,10 @@
 
 package com.safasoft.treeweb.service.impl;
 
-import com.safasoft.treeweb.bean.ListKpiTemp;
-import com.safasoft.treeweb.bean.TableContentTemp;
+import com.safasoft.treeweb.bean.support.ListKpi;
+import com.safasoft.treeweb.bean.support.TableContent;
 import com.safasoft.treeweb.bean.Users;
-import com.safasoft.treeweb.bean.support.ListBean;
+import com.safasoft.treeweb.bean.support.TableValue;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import com.safasoft.treeweb.dao.UsersDAO;
 import com.safasoft.treeweb.service.UsersService;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
+ * Users service model implementation
  * @created Jun 23, 2015
  * @author awal
  */
@@ -31,35 +32,53 @@ public class UsersServiceImpl implements UsersService {
 
   protected static Logger logger = Logger.getLogger("service");
 
+  @Override
   public List<Users> getAll() {
     return usersDAO.getAll();
   }
 
+  @Override
   public Users getById(String id) {
     return usersDAO.getById(id);
   }
 
+  @Override
   public List<UserProfileBean> getUserProfile(String userName) {
     return usersDAO.getUserProfile(userName);
   }
 
-  public List<ListKpiTemp> getListKpi(String dept, String members, String coy, String lob, String dtsTable, String dtsTableLastMonth) {
+  @Override
+  public List<ListKpi> getListKpi(String dept, String members, String coy, String lob, String dtsTable, String dtsTableLastMonth) {
     return usersDAO.getListKpi(dept,members,coy,lob,dtsTable,dtsTableLastMonth);
   }
 
-  public List<ListKpiTemp> getListKpi(String dept, String members, String coy, String lob, String kpi, String dtsTable, String dtsTableLastMonth) {
+  @Override
+  public List<ListKpi> getListKpi(String dept, String members, String coy, String lob, String kpi, String dtsTable, String dtsTableLastMonth) {
     return usersDAO.getListKpi(dept,members,coy,lob,kpi,dtsTable,dtsTableLastMonth);
   }
 
-  public TableContentTemp getListTableValue(String tableName, int pageNo) {
-    return usersDAO.getListTableValue(tableName, pageNo);
+  @Override
+  public TableContent getListTableContentByPage(String tableName, int pageNo) {
+    return usersDAO.getListTableContentByPage(tableName, pageNo);
   }
 
+  @Override
   public void saveTable(String sql) {
     usersDAO.saveTable(sql);
   }
 
-  public List<ListBean> getListDdl(String tableName, String code, String name) {
-    return usersDAO.getListDdl(tableName, code, name);
+  @Override
+  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn) {
+    return usersDAO.getListTableValue(tableName, columnsSerialExt, orderByColumn);
+  }
+
+  @Override
+  public Integer getPageNo(String tableName, String id, String columnsSerialExt, String orderByColumn) {
+    return usersDAO.getPageNo(tableName, id, columnsSerialExt, orderByColumn);
+  }
+
+  @Override
+  public String getUploadTableAccess(String tableName) {
+    return usersDAO.getUploadTableAccess(tableName);
   }
 }

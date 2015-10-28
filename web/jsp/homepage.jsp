@@ -12,19 +12,21 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   </head>
 <body>
-  <div style="position: relative; top: 100px; width: 60%; margin: auto; text-align: center">
-    <h1 style="padding: 10px; border: 5px solid #555; margin: 0; border-radius: 25px">
-      Selamat datang di aplikasi FOCUS
+  <div class="default-message" style="width: 60%">
+    <h1>
+      <div>
+        Selamat datang di aplikasi FOCUS
+      </div>      
     </h1>
     <br/>
     <br/>
-    <hr style="border-color: #555; border-width: 5px"/>
+    <hr class="hr-top"/>
     <h3>
       FOCUS berfungsi sebagai sistem monitoring KPI di FIFGROUP
       untuk pengambilan keputusan yang cepat dan tepat dalam
       mengantisipasi perubahan bisnis
     </h3>
-    <hr style="border-color: #bbb; border-width: 2px"/>
+    <hr class="hr-down"/>
     <br/>
     <br/>
     <p>

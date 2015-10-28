@@ -11,11 +11,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   </head>
 <body>
-  <div style="position: relative; top: 100px; width: 40%; margin: auto; text-align: center">
+  <div class="default-message">
     <h1>
       <span class="glyphicon glyphicon-warning-sign" style="color: orangered"></span>
       <br/><br/>
-      <div style="padding: 10px; border: 5px solid #555; margin: 0; border-radius: 25px">
+      <div>
         <span>The server encountered an error!</span>
       </div>
     </h1>

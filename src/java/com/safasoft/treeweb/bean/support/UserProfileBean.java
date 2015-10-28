@@ -11,6 +11,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 /**
+ * User profile store
  * @created Aug 10, 2015
  * @author awal
  */

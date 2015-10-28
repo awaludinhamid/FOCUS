@@ -17,6 +17,7 @@ import org.springframework.security.ldap.userdetails.LdapAuthoritiesPopulator;
 import org.springframework.stereotype.Component;
 
 /**
+ * Generate role authority on LDAP user
  * @created Jun 24, 2015
  * @author awal
  */
@@ -26,6 +27,12 @@ public class CustomLdapAuthoritiesPopulator implements LdapAuthoritiesPopulator 
 
   protected static Logger logger = Logger.getLogger("service");
 
+       /**
+        * Attach authority to logged user from database
+        * @param userData
+        * @param username
+        * @return 
+        */
        @Override
        public Collection<GrantedAuthority> getGrantedAuthorities(
                        DirContextOperations userData, String username) {

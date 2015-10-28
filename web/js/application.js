@@ -7,17 +7,19 @@ $(document).ready(function(){
   
     /* VARIABLE DECLARATION */
     //
-    var m = [80, 120, 20, 220], //svg padding to tree(up,left,down,right)
-        minW = 2040, //min tree diagram width
-        minH = 1020, //min tree diagram height
+    var m = [100, 80, 100, 80], //svg padding to tree(up,left,down,right)
+        minW = 1360, //min tree diagram width
+        minH = 768, //min tree diagram height
         w = 0, //tree diagram width
         h = 0, //tree diagram height
         cnt = 0; //node count
     var root, tree, diagonal, vis, tooltip, linktip, linGradRed, linGradGreen, linGradYellow, linGradCyan, linGradGrey, radGrad; //tree var holder
-    var rCircle = 25; //circle node radiant
-    var lLine = 400; //hierarchy line length
+    var rCircle = 15; //circle node radiant
+    var lLine = 320; //hierarchy line length
     var linkTree = "";	//json file name
     var hoverFlag = 0;//avoid hover on click
+    var delimiter = "_";//kpi param value separator
+    var kpiDefTopPos = $(".app-def-position").css("top");//default top position of apps
     //	
     var kpiBrkdwnFlag = 0, //0=by kpi 1=by area
         kpiDetFlag; //0=level sebelum child terakhir 1=level child terakhir
@@ -31,6 +33,17 @@ $(document).ready(function(){
                   {name: "coy",value:"01"},
                   {name: "lob",value:"nmc"},
                   {name: "initMembers",value:""}];
+    //
+    var arrZoomPoint = [{left:"0px",scale:0.4},
+                        {left:"12px",scale:0.7},
+                        {left:"27px",scale:1},
+                        {left:"42px",scale:1.25},
+                        {left:"54px",scale:1.5}];
+    var currZoomPoint = 2;//init index of arrZoomPoint array
+    var bodyProp;//holder of <body> property like width,height
+    var extType;//download file extension
+    //hardcode top position of hover info depend on various zooming, next time might be replaced with formulation found
+    var arrTopPoint = {1:100,0.9:200,0.8:340,0.7:520,0.6:770,0.5:1100,0.4:1600,0.3:2420,0.2:4100,0.1:9100};
     /* *** */
 
     /* MEMBER & DEPARTMENT GENERATE */
@@ -42,13 +55,14 @@ $(document).ready(function(){
         setValue("members",data[0].memberListCode);
         setValue("initMembers",data[0].memberListCode);
         //labelling current user layer
-        $("#logUser #layer").text("Layer: "+data[0].memberName+(data[0].memberListCode == "00000" ? "" : " "+data[0].memberListName));
+        $("div#right-title span").html("<span class='"+glyTags+"'></span>&nbsp;&nbsp;Layer: "+
+                data[0].memberName+(data[0].memberListCode == "00000" ? "" : " "+data[0].memberListName));
         //flag to switch data [un]loading and flag to switch detail[breakdown] view
         arrFlag.push({code: "dept", flag: 0, detFlag: 0});
         //append/labelling/styling distinct dept/layer, show first item only and set current dept/layer
         $("#kpiSelect").append(
-          "<ul id='dept'>"+
-            "<li id='selectdept'><span id='spanselectdept'>&nbsp;Department</span></li>"+
+          "<ul id='dept' class='list-unstyled' title='Department'>"+
+            "<li id='selectdept' hidden><span id='spanselectdept'>&nbsp;&nbsp;Department</span></li>"+
           "</ul>");
         $("#spanselectdept")
             .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
@@ -87,9 +101,9 @@ $(document).ready(function(){
             //append member/level to the tags list, only first member/level should be display
             //each member has label, all list option (if necessery) and styling
             $("#kpiMember").append(
-              "<ul id='"+data[i].memberCode+"'"+(i == 1 ? "" : " style='display: none'")+">"+
-                "<li id='select"+data[i].memberCode+"'><span id='spanselect"+data[i].memberCode+"'>&nbsp;"+data[i].memberName+"</span></li>"+
-                "<li id='all"+data[i].memberCode+"'"+(data[i].deptCode == deptTemp ? "" : " data-id='"+getValue("members")+"'")+"><span id='spanall"+data[i].memberCode+"'>&nbsp;All</span></li>"+
+              "<ul id='"+data[i].memberCode+"' class='list-unstyled' title='"+data[i].memberName+"'"+(i == 1 ? "" : " style='display: none'")+">"+
+                "<li id='select"+data[i].memberCode+"' hidden><span id='spanselect"+data[i].memberCode+"'>&nbsp;&nbsp;"+data[i].memberName+"</span></li>"+
+                "<li id='all"+data[i].memberCode+"'"+(data[i].deptCode == deptTemp ? "" : " data-id='"+getValue("members")+"'")+"><span id='spanall"+data[i].memberCode+"'>&nbsp;&nbsp;All&nbsp;"+data[i].memberName+"</span></li>"+
               "</ul>");
             $("#spanselect"+data[i].memberCode)
                 .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
@@ -118,12 +132,12 @@ $(document).ready(function(){
         //show data tree
         showJson();
       } else {
-        modalCommonShow(3,"Loading profile json file unsuccessfully: status = " + status);
+        modalCommonShow(3,"Loading profile json unsuccessfully: status = " + status);
       }
     }).fail(function(d) {
-      modalCommonShow(2,"Failed to load profile json file: ", d);
+      modalCommonShow(2,"Failed to load profile json: ", d);
     }).error(function(d) {
-      modalCommonShow(1,"Error loading profile json file: ", d);
+      modalCommonShow(1,"Error loading profile json: ", d);
     });
     //label styling
     $("#kpi span")
@@ -134,8 +148,8 @@ $(document).ready(function(){
     function generateDts() {
       //append/labelling/styling distinct data time series
       $("#kpiSelect").append(
-        "<ul id='dts'>"+
-          "<li id='selectdts'><span id='spanselectdts'>&nbsp;Data Time Series</span></li>"+
+        "<ul id='dts' class='list-unstyled' title='Data Time Series'>"+
+          "<li id='selectdts' hidden><span id='spanselectdts'>&nbsp;&nbsp;Data Time Series</span></li>"+
         "</ul>");
       $("#spanselectdts")
           .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
@@ -155,8 +169,8 @@ $(document).ready(function(){
     function generateCoy() {
       //append/labelling/styling distinct company
       $("#kpiSelect").append(
-        "<ul id='coy'>"+
-          "<li id='selectcoy'><span id='spanselectcoy'>&nbsp;Company</span></li>"+
+        "<ul id='coy' class='list-unstyled' title='Company'>"+
+          "<li id='selectcoy' hidden><span id='spanselectcoy'>&nbsp;&nbsp;Company</span></li>"+
         "</ul>");
       $("#spanselectcoy")
           .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
@@ -176,8 +190,8 @@ $(document).ready(function(){
     function generateLob() {
       //append/labelling/styling distinct product
       $("#kpiSelect").append(
-        "<ul id='lob'>"+
-          "<li id='selectlob'><span id='spanselectlob'>&nbsp;LOB</span></li>"+
+        "<ul id='lob' class='list-unstyled' title='Business Unit'>"+
+          "<li id='selectlob' hidden><span id='spanselectlob'>&nbsp;&nbsp;Business Unit</span></li>"+
         "</ul>");
       $("#spanselectlob")
           .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
@@ -198,12 +212,12 @@ $(document).ready(function(){
     $("#kpiSelect").on("click","ul li",function() {
       var thisId = this.id; //current item id
       var parentId = $(this).parent().attr("id"); //current parent (group)
-      //set current group value
-      setValue(parentId,thisId);
       //label static, toggle list view and when current value different from previous one reload data
       //specific to dept group including change member/level item list
       if(thisId != "select"+parentId) {
-        if(getFlag(parentId) == 1) {
+        if(getFlag(parentId) == 1 && thisId != getValue(parentId)) {
+          //set current group value
+          setValue(parentId,thisId);
           if(parentId == "dept") {
             kpiDetFlag = getDetFlag("dept");
             setValue("members",getValue("initMembers"));
@@ -224,11 +238,12 @@ $(document).ready(function(){
           setFlag(parentId,1);
         }
         toggleList(parentId,thisId);
+        $("#kpiMember").slideToggle(translation);
       }
     });
 
     //click on kpi member/level
-    $("#kpiMember").on("click","ul li",function() {
+    $("#kpiMember").on("click","ul li",function(event) {
       var thisId = this.id; //current item id
       var parentId = $(this).parent().attr("id"); //current parent (group)
       //label static, toggle list view and when current value different from previous one reload data
@@ -251,7 +266,7 @@ $(document).ready(function(){
             //if current member/level has child, show its child
             if(childList.length > 0) {
               //show only first option
-              $("#"+childList[0]+" li:not('#select"+childList[0]+",#all"+childList[0]+"')").detach();
+              $("#"+childList[0]+" li:not('#select"+childList[0]+",#all"+childList[0]+"')").remove();
               $("#"+childList[0]+" li#all"+childList[0]).data("id",getValue("members"));
               //create child list from json file, generated by other process, got from js/ folder
               var childDetList = window["list_"+childList[0].replace(getValue("dept")+"-","")+"_"+
@@ -266,24 +281,112 @@ $(document).ready(function(){
           }
           showJson();
           setFlag(parentId,0);
-          $("#kpiMember").css("position", "fixed");
+          $("div:has('#kpiMember')").css("position", "fixed").css("top", kpiDefTopPos);
         } else {
           setFlag(parentId,1);
           setDefTreeView();
-          $("#kpiMember").css("position", "absolute");
+          $("div:has('#kpiMember')").css("position", "absolute").css("top", h/2 + 100);
         }
         toggleList(parentId,thisId);
+        $("#kpiSelect,#kpiMember hr").slideToggle(translation);
       }
     });
     
     //click on refresh data menu
     $("#idRefresh").on("click", function() {
-      $.post("/FOCUS/apps/data/refresh",function(data,status) {
-        linkTree = "";
-        showJson();      
+      linkTree = "";
+      showJson();
+    });
+    
+    //click on download file
+    $("#btn-download").on("click", function() {
+      $("#mdl-download").modal("show");
+    });
+    //click on download file type option
+    $("#mdl-download .modal-footer button:not('#btn-cancel')").click(function() {
+      extType = this.id.replace("btn-","");//grab extention from id
+      $("#loading").show();
+      //request file to server w/ report parameter
+      //show download prompted when succeed
+      $.post("/FOCUS/apps/data/download/request",{
+        deptName: getName("#kpiSelect #dept li"),
+        dtsName: getName("#kpiSelect #dts li"),
+        coyName: getName("#kpiSelect #coy li"),
+        lobName: getName("#kpiSelect #lob li"),
+        membersName: getName("#kpiMember li"),
+        kpiName: $("#spanKpiDet").text().trim(" "),
+        kpiBrkdwnFlag: kpiBrkdwnFlag,
+        extType: extType},
+      function(data,status) {
+        if(status == "success") {
+          window.location.replace("/FOCUS/apps/data/download");
+          $("#loading").hide();
+        } else {
+          modalCommonShow(3,"Download report unsuccessfully: status = " + status);
+        }
+      }).fail(function(d) {
+        modalCommonShow(2,"Failed to download report: ", d);
+      }).error(function(d) {
+        modalCommonShow(1,"Error download report: ", d);
       });
     });
+    
+    //click on zoom in button
+    $("#zoom-slider #btn-zoom-in").click(function() {        
+      for(i = 0; i < arrZoomPoint.length; i++) {
+        //execute on current zoom index, apply if index greater than 1
+        //see arrZoomPoint array to check the value of each position
+        //decreased zooming by one position
+        //redefine left/top tree position if zooming is greater than normal to avoid hidden view
+        if(i === currZoomPoint && i > 0) {
+          currZoomPoint -= 1;
+          var bodyObj = $("#body");
+          bodyObj.css("transform", "scale("+arrZoomPoint[currZoomPoint].scale+")");
+          if(currZoomPoint >= 2) {
+            bodyObj.css("left", (bodyProp.width*arrZoomPoint[currZoomPoint].scale-bodyProp.width)/2+bodyProp.left+"px");
+            bodyObj.css("top", (bodyProp.height*arrZoomPoint[currZoomPoint].scale-bodyProp.height)/2+bodyProp.top+"px");
+          }
+          $("#zoom-slider #btn-slider").css("left",arrZoomPoint[currZoomPoint].left);
+          break;
+        }          
+      }      
+    });
+    
+    //click on zoom out button
+    $("#zoom-slider #btn-zoom-out").click(function() {        
+      for(i = 0; i < arrZoomPoint.length; i++) {
+        //execute on current zoom index, apply if index less than array length
+        //see arrZoomPoint array to check the value of each position
+        //increased zooming by one position
+        //redefine left/top tree position if zooming is greater than normal to avoid hidden view
+        if(i === currZoomPoint && i < arrZoomPoint.length-1) {
+          currZoomPoint += 1;
+          var bodyObj = $("#body");
+          bodyObj.css("transform", "scale("+arrZoomPoint[currZoomPoint].scale+")");
+          if(currZoomPoint >= 2) {
+            bodyObj.css("left", (bodyProp.width*arrZoomPoint[currZoomPoint].scale-bodyProp.width)/2+bodyProp.left+"px");
+            bodyObj.css("top", (bodyProp.height*arrZoomPoint[currZoomPoint].scale-bodyProp.height)/2+bodyProp.top+"px");
+          }
+          $("#zoom-slider #btn-slider").css("left",arrZoomPoint[currZoomPoint].left);
+          break;
+        }          
+      }      
+    });    
+    
+    //click on expand/collapse button
+    $("#zoom-slider #btn-expand-collapse").click(function() {
+      //toggle between button (expand or collapse), identify through its current css class
+      if($(this).hasClass("glyphicon-resize-small")) {
+        $(this).attr("title","Expand All");
+        collapseAll();
+      } else {
+        $(this).attr("title","Collapse All");
+        expandAll();
+      }
+      $(this).toggleClass("glyphicon-resize-small").toggleClass("glyphicon-resize-full");
+    });
 
+    //click on map closing button (next future?)
     $("div#mapClose button").click(function() {
       $("div#map iframe").attr("src","");
       $("div#map").hide("slow");
@@ -298,17 +401,19 @@ $(document).ready(function(){
       //generate json, if current json different from previous one and GET status is success then reload data
       if(linkTree != linkTreeTemp) {
         $("#loading").show();
-        $.get("/FOCUS/apps/data/kpi",{jsonName: linkTreeTemp},function(data,status) {
+        $.get("/FOCUS/apps/data/kpi",{jsonName: linkTreeTemp, delimiter: delimiter},function(data,status) {
           if(status == "success") {
             linkTree = linkTreeTemp;
+            currZoomPoint = 2;
+            $("#zoom-slider #btn-slider").css("left",arrZoomPoint[currZoomPoint].left);
             updateTree(data);
           } else {
-            modalCommonShow(3,"Loading kpi json file unsuccessfully: status = " + status);
+            modalCommonShow(3,"Loading kpi json unsuccessfully: status = " + status);
           }
         }).fail(function(d) {
-          modalCommonShow(2,"Failed to load kpi json file: ", d);
+          modalCommonShow(2,"Failed to load kpi json: ", d);
         }).error(function(d) {
-          modalCommonShow(1,"Error loading kpi json file: ", d);
+          modalCommonShow(1,"Error loading kpi json: ", d);
         });
       }
     }
@@ -322,7 +427,18 @@ $(document).ready(function(){
       //show first children only, update view, and restore scroll position
       root = treeLinked;
       initTreeVariable();
-      root.children.forEach(toggleAll);
+      if(bodyProp == null)
+        bodyProp = {left:m[3],top:m[0],width:$("#body").css("width").replace("px",""),height:$("#body").css("height").replace("px","")};
+      $("#body").css("left", (bodyProp.width*arrZoomPoint[currZoomPoint].scale-bodyProp.width)/2+bodyProp.left+"px");
+      $("#body").css("top", (bodyProp.height*arrZoomPoint[currZoomPoint].scale-bodyProp.height)/2+bodyProp.top+"px");
+      if(kpiBrkdwnFlag === 1) {
+        $("#zoom-slider #btn-expand-collapse").addClass("glyphicon-resize-full").removeClass("glyphicon-resize-small");
+        $("#zoom-slider #btn-expand-collapse").attr("title","Expand All");
+        collapseAll();
+      } else {
+        $("#zoom-slider #btn-expand-collapse").addClass("glyphicon-resize-small").removeClass("glyphicon-resize-full");
+        $("#zoom-slider #btn-expand-collapse").attr("title","Collapse All");
+      }
       update(root);
       setDefTreeView();
       $("#loading").hide();
@@ -351,9 +467,11 @@ $(document).ready(function(){
       //put growth value on foreignObject or text node (if IE browser) and its properties
       if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) {//IF IE
         nodeEnter
-          .append("svg:rect")
-          .attr("width",function(d) {return 10*(d.name.length);})
-          .attr("height", 30)
+          .append("svg:rect")//only for background
+          .attr("width",function(d) {return (
+            d.name.length < 10 && d.name.toUpperCase() === d.name ? 9 :
+            (d.name.length < 10 || d.name.toUpperCase() === d.name? 8 : 6)) * (d.name.length);})
+          .attr("height", 20)
           .attr("rx", 5)
           .attr("ry", 5)
           //filled object with color related to its value, except root has additional color if it not in breakdown view
@@ -372,8 +490,8 @@ $(document).ready(function(){
                 }
               }})
           .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
-          .attr("y", "7")
-          .attr("x", "25")
+          .attr("y", "4")
+          .attr("x", "13")
           //show additional info when hover object
           .on("mouseover",function(d) {
             div
@@ -402,22 +520,23 @@ $(document).ready(function(){
         nodeEnter
           .append("svg:text")
           .text(function(d) {return d.name;})
+          .style("font-size","10px")
           .attr("fill",function(d){if(d.button == "btn btn-default btn-sm") return "black"; else return "white";})
-          .attr("y", "25")
-          .attr("x", "35");
+          .attr("y", "17")
+          .attr("x", "17");
       } else {
         nodeEnter
           .append("svg:foreignObject")
-          .attr("width", function(d) {return 10*(d.name.length)+100;})
-          .attr("height", "40px")
+          .attr("width", function(d) {return (d.name.length < 10? 15 : 10) * (d.name.length);})
+          .attr("height", "22px")
           .attr("id","foreignObject")
           .attr("y", "0em")
-          .attr("x", "1.7em")
+          .attr("x", "1.0em")
           .style("opacity","0.8")
           //filled object with color and icon related to its value, except root has additional color if it not in breakdown view
           .html(function(d) {
-            var htmlElement = "<span class='"+d.button+"' title='Show breakdown'>"+d.name+
-              "&nbsp;<span class='"+d.icon+"'></span></span>";
+            var htmlElement = "<button class='"+d.button+"' title='Show breakdown'>"+d.name+
+              "&nbsp;<span class='"+d.icon+"'></span></button>";
             if(kpiBrkdwnFlag == 0) {
               if(d == root) {
                 htmlElement = htmlElement.replace("title='Show breakdown'","style='cursor: not-allowed'");
@@ -439,13 +558,13 @@ $(document).ready(function(){
           })
           //show info by breakdown or detail depend on flag
           .on("click",function(d) {
-            $("div#map").hide("slow");
+            //$("div#map").hide("slow");
             showInfo(root,d);
           });
       }
       //polyline nodes and its properties
       nodeEnter.append("svg:polygon")
-        .attr("points", "23,-8 23,8 25,8 25,18 35,0 25,-18 25,-8")
+        .attr("points", "14,-4 14,4 16,4 16,9 20,0 16,-9 16,-4")
         .attr("fill",function(d){return d.color;});
       //circle nodes and its properties
       nodeEnter
@@ -469,7 +588,7 @@ $(document).ready(function(){
         })
         .style("fill", function(d){return "url(#"+d.color+")";})
         .style("cursor", function(d) {return d._children ? "pointer" : "default";})
-        .on("mouseover", function(d) {          
+        .on("mouseover", function(d) {
           if(hoverFlag == 0 && d.color != "cyan" && d.color != "grey") {
             tooltip
               .transition()
@@ -477,8 +596,8 @@ $(document).ready(function(){
               .style("opacity", .9);
             tooltip
               .html("<div>"+
-                      "<table style='font-weight: bolder; table-layout: fixed'>"+
-                        "<thead style='background-color: lightgrey'><td></td><td>Value</td></thead>"+
+                      "<table class='table-data-hover'>"+
+                        "<thead><td></td><td>Value</td></thead>"+
                         "<tbody><tr><td>Target</td><td>"+numberWithCommas(d.target)+"</td></tr>" +
                         "<tr><td>Actual</td><td>"+numberWithCommas(d.actual)+"</td></tr>" +
                         "<tr><td>Achieve</td><td>"+d.achieve+"%</td></tr>" +
@@ -486,8 +605,23 @@ $(document).ready(function(){
                         "<tr><td>Growth</td><td>"+d.growth+"%</td></tr></tbody>"+
                       "</table>"+
                     "</div>")
-              .style("left", (d3.event.pageX + 20) + "px")
-              .style("top", (d3.event.pageY + 10) + "px");
+              .style("left",function() {
+                if(currZoomPoint >= 2)
+                  return (d3.event.pageX +
+                        (d.depth  * (lLine * (1-arrZoomPoint[currZoomPoint].scale))) -
+                        (bodyProp.left * arrZoomPoint[currZoomPoint].scale)) + "px";
+                return (d3.event.pageX +
+                        (d.depth  * (lLine * (1-arrZoomPoint[currZoomPoint].scale))) +
+                        (bodyProp.width*(arrZoomPoint[currZoomPoint].scale-1))/2 -
+                        (bodyProp.left * arrZoomPoint[currZoomPoint].scale)) + "px";
+              })
+              .style("top",function() {
+                if(currZoomPoint >= 2)
+                  return (1/arrZoomPoint[currZoomPoint].scale*d3.event.pageY -
+                        1/arrZoomPoint[currZoomPoint].scale*bodyProp.top) + "px";
+                return d3.event.pageY * 1/arrZoomPoint[currZoomPoint].scale -
+                        arrTopPoint[arrZoomPoint[currZoomPoint].scale] + "px";
+              });
             linktip
               .transition()
               .duration(500)
@@ -582,14 +716,7 @@ $(document).ready(function(){
         });
     }
 
-    function toggleAll(d) {
-      if (d.children) {
-        d.children.forEach(toggleAll);
-        toggle(d);
-      }
-    }
-
-    // Toggle children.
+    //toggle children between expand or collapse.
     function toggle(d) {
       if (d.children) {
         d._children = d.children;
@@ -599,7 +726,41 @@ $(document).ready(function(){
         d._children = null;
       }
     }
+    
+    //expand children only
+    function expand(d){   
+      var children = (d.children)?d.children:d._children;
+      if (d._children) {        
+          d.children = d._children;
+          d._children = null;       
+      }
+      if(children)
+        children.forEach(expand);
+    }
+    
+    //toggle children only
+    function collapse(d) {
+      if(d.children) {
+        d._children = d.children;
+        d._children.forEach(collapse);
+        d.children = null;
+      }
+    }
 
+    //expand children of all nodes
+    function expandAll(){
+        expand(root); 
+        update(root);
+    }
+
+    //collapse children of all nodes
+    function collapseAll(){
+      root.children.forEach(collapse);
+      //collapse(root);
+      update(root);
+    }
+
+    //init tree variable
     function initTreeVariable() {
         //init line
         diagonal = d3
@@ -617,22 +778,25 @@ $(document).ready(function(){
           .append("div") 
           .attr("class", "tooltip") 
           .style("opacity", 0);
-        linktip.style("display","none");//remark to show this object
+        linktip.style("display","none");//remark to show this object, prepare for map
         //sizing tree
         var depth = 0;
         var depthTemp = 0;
         setDepth(root);
         var stack = root.children.length;
         var tempW = (rCircle+lLine)*depth;
-        var tempH = stack*(m[0]+m[2]);
+        var tempH = kpiBrkdwnFlag === 0 ? stack*(m[0]+m[2]) : stack*(m[0]+m[2])/2;
         w =  tempW > minW ? tempW : minW;
         h = tempH > minH ? tempH : minH;
+        //x,y node start position
         root.x0 = h / 2;
         root.y0 = 0;
+        //created tree object
         tree = d3
           .layout
           .tree()
           .size([h, w]);
+        //created svg object on tree (container)
         vis = d3
           .select("#body")
           .append("svg:svg")
@@ -743,7 +907,7 @@ $(document).ready(function(){
           .append("svg:stop")
           .attr("offset","100%")
           .attr("style","stop-color:white;stop-opacity:1");
-
+        //grab the most length of nodes
         function setDepth(obj) {
           if (obj.children) {
               obj.children.forEach(function (d) {
@@ -762,29 +926,7 @@ $(document).ready(function(){
 
     /* SUPPORTING FUNCTION */
 
-    //show modal info with message 'content' and object reqObjTemp
-    //errCode: 1=Error, 2=Failed, 3=Warning, 4=Info
-    function modalCommonShow(errCode,content,reqObjTemp) {
-      var htmlTitle = "<h3>Undefined</h3>";
-      if(errCode == 1)
-        htmlTitle = "<h3 style='color: red'><span class='glyphicon glyphicon-minus-sign'></span>&nbsp;Error</h3>";
-      else if (errCode == 2)
-        htmlTitle = "<h3 style='color: red'><span class='glyphicon glyphicon-ban-circle'></span>&nbsp;Failed</h3>";
-      else if (errCode == 3)
-        htmlTitle = "<h3 style='color: orange'><span class='glyphicon glyphicon-exclamation-sign'></span>&nbsp;Warning</h3>";
-      else if (errCode == 4)
-        htmlTitle = "<h3 style='color: blue'><span class='glyphicon glyphicon-info-sign'></span>&nbsp;Info</h3>";
-      if(!(reqObjTemp == null)) {
-        var message = reqObjTemp.responseText;
-        var startIdx = message.indexOf("<body>");
-        content += message.substring(startIdx).replace("</html>","").replace(/h\d>/g,"p>");
-      }
-      $("#mdl-common #myModalLabel").html(htmlTitle);
-      $("#mdl-common #content").html(content);
-      $("#mdl-common").modal("show");
-      $("#loading").hide();
-    }
-
+    //show map (next future?)
     function mapShow(kpiTemp) {
       $("#loading").show();
       $("div#map iframe").attr("src","http://10.17.18.123:8081/poi/index.jsp?kpi="+kpiTemp);
@@ -801,16 +943,16 @@ $(document).ready(function(){
             setValue("kpiCode","");
             showJson();
             //hide all option
-            $("#kpiSelect,#kpiMember").slideDown(translation);
+            $("div:has('#kpiMember')").slideDown(translation);
             $("#kpi").slideUp(translation);
             kpiBrkdwnFlag = 0;
           } else if(dataDet != dataRoot && kpiBrkdwnFlag == 0)  {
             setValue("kpiCode",dataDet.kpi);
             showJson();
             //show back all option
-            $("#kpiSelect,#kpiMember").slideUp(translation);
-            $("#spanKpi").text(" " + dataRoot.name);
-            $("#spanKpiDet").text(" " + dataDet.name);
+            $("div:has('#kpiMember')").slideUp(translation);
+            $("#spanKpi").html("&nbsp;&nbsp;" + dataRoot.name);
+            $("#spanKpiDet").html("&nbsp;&nbsp;" + dataDet.name);
             $("#kpi").slideDown(translation);
             kpiBrkdwnFlag = 1;
           //just popup info
@@ -911,18 +1053,27 @@ $(document).ready(function(){
     //kpi_[timeseries]_[layer]_[level]_[coy]_[lob]_[kpi_id|null]_[timestamp]
     function getKpiName() {
       var kpiCodeTemp = getValue("kpiCode");
-      return "kpi_"+getValue("dts")+"_"+getValue("dept")+"_"+getValue("members")+"_"+getValue("coy")+"_"+getValue("lob")+"_"+
-        (kpiCodeTemp == null || kpiCodeTemp == ""? "" : kpiCodeTemp+"_")+vTimeStamp;
+      return "kpi"+delimiter+getValue("dts")+delimiter+getValue("dept")+delimiter+getValue("members")+
+        delimiter+getValue("coy")+delimiter+getValue("lob")+delimiter+
+        (kpiCodeTemp == null || kpiCodeTemp == ""? "" : kpiCodeTemp+delimiter)+vTimeStamp;
     }
 
     //set tree view default position
     function setDefTreeView() {
       $(window).scrollLeft(0);
-      var scrollTopPos = (h/2) - (5*(m[0]+m[2]));
-      if(scrollTopPos < 0)
-        $(window).scrollTop(0);
-      else
-        $(window).scrollTop(scrollTopPos);
+      $(window).scrollTop(kpiBrkdwnFlag === 0 ? h/2 : h/3);
+    }
+    
+    //get label of current option, used as report parameter
+    function getName(pSelector) {
+      var name = "";
+      $(pSelector).each(function() {
+        if(this.id.indexOf("select") === -1 && $(this).parent("ul").css("display") !== "none" && $(this).css("display") !== "none") {
+          name = $(this).text().trim(" ");
+          return false;
+        }
+      });
+      return name;
     }
     /* *** */
 });

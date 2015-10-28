@@ -8,11 +8,11 @@
 <!DOCTYPE html>
 <html>
 <body>
-  <div style="position: relative; top: 100px; width: 40%; margin: auto; text-align: center">
+  <div class="default-message">
     <h1>
-      <span class="glyphicon glyphicon-minus-sign" style="color: red"></span>
+      <span class="glyphicon glyphicon-minus-sign"></span>
       <br/><br/>
-      <div style="padding: 10px; border: 5px solid #555; margin: 0; border-radius: 25px">
+      <div>
         <span>Access denied, you have no privilege to access this page!</span>
       </div>
     </h1>

@@ -12,6 +12,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 /**
+ * Users table
  * @created Jun 22, 2015
  * @author awal
  */

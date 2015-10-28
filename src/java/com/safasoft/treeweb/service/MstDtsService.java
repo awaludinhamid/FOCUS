@@ -9,7 +9,7 @@ import com.safasoft.treeweb.bean.MstDts;
 import java.util.List;
 
 /**
- *
+ * Master data time series model service
  * @author awal
  */
 public interface MstDtsService {

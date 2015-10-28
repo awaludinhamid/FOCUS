@@ -15,19 +15,28 @@
     <script src="../../js/application.js"></script>
   </head>
   <body>
-    <div id="kpi" hidden>
-      <span id="spanKpi"></span><br/><br/>
-      <span id="spanKpiDet"></span>
+    <div id="kpi" class="app-def-position" hidden>
+      <ul class="list-unstyled">
+        <li><span id="spanKpi"></span></li>
+        <li><span id="spanKpiDet"></span></li>
+      </ul>
     </div>
-    <div id="kpiSelect">
+    <div class="app-def-position">
+      <div id="kpiSelect">
+      </div>
+      <div id="kpiMember">
+        <hr style="border-width: 2px"/>
+      </div>
     </div>
-    <div id="kpiMember">
-    </div>
-    <div id="body">
+    <div id="zoom-slider">
+      <button id="btn-zoom-in" class="glyphicon glyphicon-minus" title="Zoom In"></button>
+      <button id="btn-slider">|</button>
+      <button id="btn-zoom-out" class="glyphicon glyphicon-plus" title="Zoom Out"></button>
+      <button id="btn-expand-collapse" class="glyphicon glyphicon-resize-small" title="Collapse All"></button>
     </div>
     <div id="map">
       <div id="mapClose">
-        <button id="btn-close-map" class="btn btn-danger btn-sm" style="position: absolute; left: 0; top: 75px; z-index: 10">
+        <button id="btn-close-map" class="btn btn-danger btn-sm">
           <span class="glyphicon glyphicon-remove"></span><span>&nbsp;Close Map</span>
         </button>
       </div>

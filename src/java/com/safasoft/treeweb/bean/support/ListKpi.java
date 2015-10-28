@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package com.safasoft.treeweb.bean;
+package com.safasoft.treeweb.bean.support;
 
 import java.io.Serializable;
 import javax.persistence.Column;
@@ -11,11 +11,12 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 /**
+ * List which store KPI column value
  * @created Aug 24, 2015
  * @author awal
  */
 @Entity
-public class ListKpiTemp implements Serializable {
+public class ListKpi implements Serializable {
 
   @Id
   @Column(name="ID")

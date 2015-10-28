@@ -12,6 +12,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 /**
+ * Master date time series table
  * @created Aug 26, 2015
  * @author awal
  */

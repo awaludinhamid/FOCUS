@@ -1,0 +1,94 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Sep 30, 2015, 9:24:22 AM
+    Author     : awal
+*/
+
+
+div#uploadData {
+  padding: 0 5px;
+  margin: 0 auto;
+  border: lightsteelblue solid 3px;
+  border-radius: 8px;
+}
+
+.table td, .table th {
+  text-align: center;
+}
+
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 100px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: inherit;
+    display: block;
+}
+
+.nav-tabs{
+}
+.nav-tabs > li > a{
+  background-color:#666;
+  color: white;
+}
+.nav-tabs > li.active > a{
+  color: #444;
+  font-weight: bolder;
+}
+.nav-tabs > li > a:hover{
+  background-color: #444 !important;
+    color:#fff;
+}
+.nav-tabs > li.active > a:hover{
+  background-color: #fff !important;
+  color:#444;
+}
+
+/*class adding later*/
+.upload-data-table {
+  background-color: #888;
+  color: white;
+  border-radius: 2px 2px 2px;
+}
+.upload-data-table .upload-status {
+  background-color: darkred;
+  box-shadow: black 2px 2px 1px;
+  font-weight: bolder;
+}
+.upload-data-table>tr>td {
+  text-align: left;
+}
+.upload-data-hr {
+  border-color: white;
+  border-width: 5px;
+  margin: 0;
+  padding: 0;
+}
+#header-row {
+  background-color: #37b;
+  color: white;
+  font-size: 11px;
+}
+#datatype-row, #format-row {
+  background-color: #888;
+  color: white;
+  font-size: 10px;
+}
+#pagination {
+  text-align: center;
+}

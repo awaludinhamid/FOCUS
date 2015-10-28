@@ -40,34 +40,28 @@ div.linktip {
 	position: absolute;
 }
 
-div#kpi {
+.app-def-position {
 	position: fixed;
-	top: 90px;
-	left: 10px;
-}
-
-div#kpiSelect {
-	position: fixed;
-	top: 90px;
-	left: -30px;
+        left: 10px;
+	top: 100px;
+        z-index: 2;
+        opacity: 0.9;
+        border-width: 0px 3px 3px 0px;
+        border-style: solid;
+        border-color: white;
+        padding-right: 4px;
+        box-shadow: #888 1px 1px 0px 0.5px;
 }
 
 div#kpiMember {
-	position: fixed;
-	top: 90px;
-	left: 150px;
-}
-
-div#kpiSelect ul, div#kpiMember ul {
-	list-style-type: none;
+        top: 270px;
+        border-width: 5px;
+        border-color: black;
 }
 
 div ul li span {
-	width: 170px;
-}
-
-div#kpiMember ul li span {
-	width: 375px;
+	width: 230px;
+  word-spacing: -8px;
 }
 
 div.tooltip table td, div#dialog-message table td {
@@ -78,13 +72,11 @@ div.tooltip table td, div#dialog-message table td {
 	position: fixed;
 	height: 65px;
         top: 0px;
-        z-index: 50;
+        z-index: 5;
         margin: 0 auto;
-	/*background: linear-gradient(to bottom left, #eff, #fff);
-	background: -moz-linear-gradient(top right, #eff, #fff);
-	background: -webkit-linear-gradient(top right, #eff, #fff);
-        background: linear-gradient(to right, #000, #115, #337, #66a, #99d, #bbf, #fff, #fff, #bbf, #99d, #66a, #337, #115, #000);*/
         background: linear-gradient(#559, white, #559);
+        background: -o-linear-gradient(#559, white, #559);
+        background: -ms-linear-gradient(#559, white, #559);
 	background: -moz-linear-gradient(#559, white, #559);
 	background: -webkit-linear-gradient(#559, white, #559);
 }
@@ -117,6 +109,12 @@ div#logUser {
 	color: #559;
 	font-weight: bold;
         text-shadow: 1px 1px 1px #559;
+}
+
+div#right-title {
+  position: absolute;
+  top: 55px;
+  right: 20px;
 }
 
 div#logo {
@@ -167,10 +165,11 @@ div#logo {
   font-size: 20px;
   font-weight: bold;
 }
+
 div#map {
   position: absolute;
-  left: 10px;
   top: 90px;
+  left: 10px;
   width: 99%;
   height: 88%;
   display: none;
@@ -178,4 +177,148 @@ div#map {
 div#map iframe {
   width: 100%;
   height: 100%;
+}
+#btn-close-map {
+  position: absolute;
+  left: 0;
+  top: 75px;
+  z-index: 10
+}
+
+.modal-header {
+  color: white;
+  background-color: #37b;
+}
+.close span {
+  color: white;
+}
+.modal-footer {
+  background-color: #ddd;
+}
+
+.left-back-pos {
+  position: fixed;
+  width: 250px;
+  background-color: lightskyblue;
+}
+.left-front-pos {
+  position: absolute;
+  top: 100px;
+  left: 10px;
+  //max-width: 15%;
+}
+.left-front-pos ul {
+  padding: 0;
+}
+.center-back-pos {
+  position: fixed;
+  left: 270px;
+  background-color: lightsteelblue;
+  width: 100%;
+}
+.center-front-pos {
+  position: absolute;
+  top: 100px;
+  left: 280px;
+  max-width: 80%;
+}
+.back-def-style {
+  height: 100%;
+  opacity: 0.4;
+  z-index: -1;
+}
+.split-back {
+  position: fixed;
+  left: 250px;
+  width: 20px;
+  background: linear-gradient(right, #888, white, #888);
+  background: -o-linear-gradient(right, #888, white, #888);
+  background: -ms-linear-gradient(right, #888, white, #888);
+  background: -moz-linear-gradient(right, #888, white, #888);
+  background: -webkit-linear-gradient(left, #888, white, #888);
+}
+
+#zoom-slider {
+  position: fixed;
+  top: 75px;
+  left: 105px;
+  background-color: #888;
+  width: 60px;
+  height: 5px;
+  z-index: 10
+}
+#zoom-slider button {
+  position: absolute;
+  font-size: 10px;
+  color: white;
+  background-color: #37b;
+  border-radius: 4px;
+}
+#zoom-slider button:hover {
+  background-color: #159;
+}
+#zoom-slider #btn-zoom-in {
+  left: -28px;
+  top: -6px;
+}
+#zoom-slider #btn-zoom-out {
+  left: 63px;
+  top: -6px;
+}
+#zoom-slider #btn-slider {
+  left: 27px;
+  top: -7px;
+  padding: 0;
+  cursor: default;  
+}
+#zoom-slider #btn-expand-collapse {
+  left: 103px;
+  top: -6px;
+  padding: 2px 6px;
+}
+
+/*class adding later*/
+#body {
+  position: relative;
+  left: 80px;
+  z-index: 0;
+}
+#foreignObject button {
+  padding: 1px;
+  font-size: 10px;
+}
+.table-data-hover {
+  font-weight: bolder;
+  table-layout: fixed;
+}
+.table-data-hover thead {
+  background-color: lightgrey;
+}
+.default-message {
+  position: relative;
+  top: 100px;
+  width: 40%;
+  margin: auto;
+  text-align: center;
+}
+.default-message>h1>span {
+  color: red;
+}
+.default-message>h1>div {
+  padding: 10px;
+  border: 5px solid #555;
+  margin: 0;
+  border-radius: 25px;
+}
+.default-message .hr-top {
+  border-color: #555;
+  border-width: 5px;
+}
+.default-message .hr-down {
+  border-color: #bbb;
+  border-width: 2px;
+}
+.form-signin .error-login {
+  color: red;
+  font-weight: bold;
 }

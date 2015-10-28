@@ -74,8 +74,8 @@ public class FileUtil {
 
     /**
      * Zip the list of file/directory
-     * @param fileName, String[] list file/directory name
-     * @param zipFile, String zip file name
+     * @param fileNames, String[] list file/directory name
+     * @param zipName, String zip file name
      * @throws IOException
      */
     public static void execZip(String[] fileNames, String zipName) throws IOException {
