@@ -12,11 +12,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="../../fificon.png" />
     <link rel="stylesheet" href="../../jQuery/css/jquery-ui.min.css"/>
     <link rel="stylesheet" href="../../bootstrap/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="../../css/focus.css"/>
+    <link rel="stylesheet" href="../../css/loading.css"/>
     <script src="../../jQuery/js/jquery.min.js"></script>
     <script src="../../jQuery/js/jquery-ui.min.js"></script>
     <script src="../../bootstrap/js/bootstrap.min.js"></script>
@@ -29,6 +30,11 @@
     <div class="left-back-pos back-def-style" hidden></div>
     <div class="split-back back-def-style" hidden></div>
     <div class="center-back-pos back-def-style" hidden></div>
+    <div id="period-anime">
+      <svg width="20" height="10" overflow="hidden">
+        <ellipse cx="10" cy="5" rx="10" ry="5" fill="white"/>
+      </svg>
+    </div>
     <div id="insetBgd">
       <div id="logo">
         <a href="http://www.fifgroup.co.id"><img src="../../img/logo FIFGROUP vertical.png" alt="FIFGROUP" width="61" height="64"/></a>
@@ -41,6 +47,7 @@
         <!--sec:authentication property="principal.username"/-->
         <span id="cnname" hidden>${sessionScope.cnname}</span>
         <span id="uid" hidden>${sessionScope.uid}</span>
+        <span id="sessionid" hidden>${sessionScope.sessionid}</span>
         <div id="userMenu" class="btn-group">
         </div>
       </div>
@@ -74,6 +81,15 @@
       <img src="../../img/loading3.gif" alt="loading.."/>
       <br/>
       <span>Loading..</span>
+      <!--section class="ball-stage">
+        <span class="redball"></span>
+        <figure class="greenball"></figure>
+        <figure class="yellowball"></figure>
+        <figure class="blueball"></figure>
+      </section>
+      <section class="text-stage">
+        <span>&nbsp;&nbsp;&nbsp;Loading..</span>
+      </section-->
     </div>
     <div id="backImage">
       <img src="../../img/logo-jempol.png" alt="background-image"/>

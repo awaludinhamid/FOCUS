@@ -41,14 +41,14 @@ $(document).ready(function(){
         ((page == "application" || page == "admin") ?
           "<li id='idRefresh'><a href='#'><i class='glyphicon glyphicon-refresh'>&nbsp;</i>Refresh Data</a></li>" : "") +
         ((page == "home") ?
-          "" : "<li><a href='/FOCUS/apps/main/home'><i class='glyphicon glyphicon-home'>&nbsp;</i>Home</a></li>") +
+          "" : "<li id='idHome'><a href='../../apps/main/home'><i class='glyphicon glyphicon-home'>&nbsp;</i>Home</a></li>") +
         ((page == "application") ?
           "<li id='btn-download'><a href='#'><i class='glyphicon glyphicon-download'>&nbsp;</i>Download</a></li>" :
-                  "<li><a href='/FOCUS/apps/main/application'><i class='glyphicon glyphicon-tags'>&nbsp;</i>Aplikasi</a></li>") +
+                  "<li><a href='../../apps/main/application'><i class='glyphicon glyphicon-tags'>&nbsp;</i>Aplikasi</a></li>") +
         ((page == "admin") ?
-          "" : "<li><a href='/FOCUS/apps/main/admin'><i class='glyphicon glyphicon-lock'>&nbsp;</i>Admin</a></li>") +
+          "" : "<li><a href='../../apps/main/admin'><i class='glyphicon glyphicon-lock'>&nbsp;</i>Admin</a></li>") +
         ((page == "upload") ?
-          "" : "<li><a href='/FOCUS/apps/main/upload'><i class='glyphicon glyphicon-upload'>&nbsp;</i>Upload</a></li>") +
+          "" : "<li><a href='../../apps/main/upload'><i class='glyphicon glyphicon-upload'>&nbsp;</i>Upload</a></li>") +
       "</ul>"
     );
     //show dropdown menu
@@ -59,7 +59,7 @@ $(document).ready(function(){
     });
     //click on yes button of logout
     $("#mdl-logout .modal-footer button#btn-yes").click(function(){
-      window.location.replace("/FOCUS/apps/auth/logout");
+      window.location.replace("../../apps/auth/logout");
     });
   } else {
     $("#userMenu").append(

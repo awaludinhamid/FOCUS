@@ -38,15 +38,19 @@ public class ListKpi implements Serializable {
   @Column(name="URL")
   private String url;
   @Column(name="TARGET")
-  private double target;
+  private Double target;
   @Column(name="ACTUAL")
-  private double actual;
+  private Double actual;
   @Column(name="LAST_MONTH")
-  private double lastMonth;
+  private Double lastMonth;
   @Column(name="ACHIEVE")
-  private double achieve;
+  private Double achieve;
   @Column(name="GROWTH")
-  private double growth;
+  private Double growth;
+  @Column(name="BATAS_ATAS")
+  private Double batasAtas;
+  @Column(name="BATAS_BAWAH")
+  private Double batasBawah;
   @Column(name="COLOR")
   private String color;
   @Column(name="DEPT")
@@ -55,6 +59,14 @@ public class ListKpi implements Serializable {
   private String button;
   @Column(name="ICON")
   private String icon;
+  @Column(name="TYPE_KPI")
+  private String typeKpi;
+  @Column(name="SATUAN")
+  private String satuan;
+  @Column(name="DATE_POPULATE")
+  private String datePopulate;
+  @Column(name="SYSTEM_ID")
+  private int systemId;
 
   /**
    * @return the ID
@@ -64,7 +76,7 @@ public class ListKpi implements Serializable {
   }
 
   /**
-   * @param ID the ID to set
+   * @param id the ID to set
    */
   public void setId(int id) {
     this.id = id;
@@ -78,7 +90,7 @@ public class ListKpi implements Serializable {
   }
 
   /**
-   * @param PARENT the PARENT to set
+   * @param parent the PARENT to set
    */
   public void setParent(int parent) {
     this.parent = parent;
@@ -101,28 +113,28 @@ public class ListKpi implements Serializable {
   /**
    * @return the target
    */
-  public double getTarget() {
+  public Double getTarget() {
     return target;
   }
 
   /**
    * @param target the target to set
    */
-  public void setTarget(double target) {
+  public void setTarget(Double target) {
     this.target = target;
   }
 
   /**
    * @return the actual
    */
-  public double getActual() {
+  public Double getActual() {
     return actual;
   }
 
   /**
    * @param actual the actual to set
    */
-  public void setActual(double actual) {
+  public void setActual(Double actual) {
     this.actual = actual;
   }
 
@@ -143,14 +155,14 @@ public class ListKpi implements Serializable {
   /**
    * @return the achieve
    */
-  public double getAchieve() {
+  public Double getAchieve() {
     return achieve;
   }
 
   /**
    * @param achieve the achieve to set
    */
-  public void setAchieve(double achieve) {
+  public void setAchieve(Double achieve) {
     this.achieve = achieve;
   }
 
@@ -171,28 +183,28 @@ public class ListKpi implements Serializable {
   /**
    * @return the lastMonth
    */
-  public double getLastMonth() {
+  public Double getLastMonth() {
     return lastMonth;
   }
 
   /**
-   * @param last_month the lastMonth to set
+   * @param lastMonth the lastMonth to set
    */
-  public void setLastMonth(double lastMonth) {
+  public void setLastMonth(Double lastMonth) {
     this.lastMonth = lastMonth;
   }
 
   /**
    * @return the growth
    */
-  public double getGrowth() {
+  public Double getGrowth() {
     return growth;
   }
 
   /**
    * @param growth the growth to set
    */
-  public void setGrowth(double growth) {
+  public void setGrowth(Double growth) {
     this.growth = growth;
   }
 
@@ -306,6 +318,90 @@ public class ListKpi implements Serializable {
    */
   public void setIcon(String icon) {
     this.icon = icon;
+  }
+
+  /**
+   * @return the typeKpi
+   */
+  public String getTypeKpi() {
+    return typeKpi;
+  }
+
+  /**
+   * @param typeKpi the typeKpi to set
+   */
+  public void setTypeKpi(String typeKpi) {
+    this.typeKpi = typeKpi;
+  }
+
+  /**
+   * @return the satuan
+   */
+  public String getSatuan() {
+    return satuan;
+  }
+
+  /**
+   * @param satuan the satuan to set
+   */
+  public void setSatuan(String satuan) {
+    this.satuan = satuan;
+  }
+
+  /**
+   * @return the batasAtas
+   */
+  public Double getBatasAtas() {
+    return batasAtas;
+  }
+
+  /**
+   * @param batasAtas the batasAtas to set
+   */
+  public void setBatasAtas(Double batasAtas) {
+    this.batasAtas = batasAtas;
+  }
+
+  /**
+   * @return the batasBawah
+   */
+  public Double getBatasBawah() {
+    return batasBawah;
+  }
+
+  /**
+   * @param batasBawah the batasBawah to set
+   */
+  public void setBatasBawah(Double batasBawah) {
+    this.batasBawah = batasBawah;
+  }
+
+  /**
+   * @return the datePopulate
+   */
+  public String getDatePopulate() {
+    return datePopulate;
+  }
+
+  /**
+   * @param datePopulate the datePopulate to set
+   */
+  public void setDatePopulate(String datePopulate) {
+    this.datePopulate = datePopulate;
+  }
+
+  /**
+   * @return the systemId
+   */
+  public int getSystemId() {
+    return systemId;
+  }
+
+  /**
+   * @param systemId the systemId to set
+   */
+  public void setSystemId(int systemId) {
+    this.systemId = systemId;
   }
 
 }

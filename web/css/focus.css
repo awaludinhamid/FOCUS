@@ -1,12 +1,12 @@
 body {
-	 /*background: linear-gradient(to bottom right, #eef, #0000ff);
-	 background: -moz-linear-gradient(left top, #eef, #0000ff);
-	 background: -webkit-linear-gradient(left top, #eef, #0000ff);
-	 background-repeat: no-repeat;*/
+  /*background: linear-gradient(to bottom right, #eef, #0000ff);
+  background: -moz-linear-gradient(left top, #eef, #0000ff);
+  background: -webkit-linear-gradient(left top, #eef, #0000ff);
+  background-repeat: no-repeat;*/
 }
 
 .node circle {
-	fill: #fff;
+  fill: #fff;
 }
 
 .node text {
@@ -85,7 +85,7 @@ span.insetType {
 	/*padding-left: 5px; * The padding is just there to move the h1 element to the center of the div *
 	padding-top: 10px;*/
 	font-family: Rockwell, Georgia, "Times New Roman", Times, serif;
-	font-size: 45px;
+	font-size: 25px;
 	/*text-decoration: underline;#0D4383*/
 	color: white;
 	text-shadow: rgba(0,0,0,0.5) -2px 0, rgba(0,0,0,0.3) 0 -2px, rgba(80,80,144,0.8) 0 3px, rgba(0,0,0,0.3) -2px -2px;
@@ -140,32 +140,6 @@ div#logo {
   height: 1372px;
 }
 
-#loading
-{
-  width:100%;
-  height:100%;
-  background:#fff;
-  position:fixed;
-  margin:0 auto;
-  padding:0;
-  overflow:hidden;
-  display:block;
-  opacity: 0.8;
-  text-align: center;
-  z-index: 500;
-}
-#loading img, #loading span {
-  position: relative;
-  top: 30%;
-  left: auto;
-  right: auto;
-}
-#loading span {
-  color: #1181B8;
-  font-size: 20px;
-  font-weight: bold;
-}
-
 div#map {
   position: absolute;
   top: 90px;
@@ -203,7 +177,7 @@ div#map iframe {
 }
 .left-front-pos {
   position: absolute;
-  top: 100px;
+  top: 80px;
   left: 10px;
   //max-width: 15%;
 }
@@ -241,11 +215,11 @@ div#map iframe {
 #zoom-slider {
   position: fixed;
   top: 75px;
-  left: 105px;
+  left: 35px;
   background-color: #888;
   width: 60px;
   height: 5px;
-  z-index: 10
+  z-index: 10;
 }
 #zoom-slider button {
   position: absolute;
@@ -275,6 +249,12 @@ div#map iframe {
   left: 103px;
   top: -6px;
   padding: 2px 6px;
+}
+#zoom-slider #btn-back {
+  left: 150px;
+  top: -6px;
+  padding: 2px 6px;
+  display: none;
 }
 
 /*class adding later*/
@@ -321,4 +301,97 @@ div#map iframe {
 .form-signin .error-login {
   color: red;
   font-weight: bold;
+}
+
+/* animation */
+div#period-anime {
+  z-index: 10;
+  position: fixed;
+  top: 23px;
+  opacity: 0.8;
+  width: 20px;
+  height: 10px;
+  animation-name: period;
+  animation-duration: 4s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  -webkit-animation-name: period; /* Chrome, Safari, Opera */
+  -webkit-animation-duration: 4s;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
+}
+@keyframes period {/* Standard syntax */
+  from {transform: translateX(0px); opacity: 0.8;}
+  to {transform: translateX(1000px); opacity: 0;}
+}
+@-webkit-keyframes period {/* Chrome, Safari, Opera */
+  from {transform: translateX(0px); opacity: 0.8;}
+  to {transform: translateX(1000px); opacity: 0;}
+}
+
+.node .ball-rounding {
+  animation-name: ball-rounding; /* Standard syntax */
+  animation-duration: 6s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+  -webkit-animation-name: ball-rounding; /* Chrome, Safari, Opera */
+  -webkit-animation-duration: 6s;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-animation-play-state: running;
+}
+.node .ball-rounding-fast {
+  animation-name: ball-rounding; /* Standard syntax */
+  animation-duration: 4s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+  -webkit-animation-name: ball-rounding; /* Chrome, Safari, Opera */
+  -webkit-animation-duration: 4s;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-animation-play-state: running;
+}
+.node .ball-rounding-faster {
+  animation-name: ball-rounding; /* Standard syntax */
+  animation-duration: 2s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+  -webkit-animation-name: ball-rounding; /* Chrome, Safari, Opera */
+  -webkit-animation-duration: 2s;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-animation-play-state: running;
+}
+@keyframes ball-rounding {/* Standard syntax */
+  0% {transform: rotate(0deg);}
+  100% {transform: rotate(360deg);}
+}
+@-webkit-keyframes ball-rounding {/* Chrome, Safari, Opera */
+  0% {-webkit-transform: rotate(0deg);}
+  100% {-webkit-transform: rotate(360deg);}
+}
+.node .ball-beat {
+  animation-name: ball-beat; /* Standard syntax */
+  animation-duration: 2s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+  -webkit-animation-name: ball-beat; /* Chrome, Safari, Opera */
+  -webkit-animation-duration: 2s;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-animation-play-state: running;
+}
+@keyframes ball-beat {/* Standard syntax */
+  0% {transform: scale(1);}
+  50% {transform: scale(0.8);}
+  100% {transform: scale(1);}
+}
+@-webkit-keyframes ball-beat {/* Chrome, Safari, Opera */
+  0% {-webkit-transform: scale(1);}
+  50% {-webkit-transform: scale(0.8);}
+  100% {-webkit-transform: scale(1);}
 }

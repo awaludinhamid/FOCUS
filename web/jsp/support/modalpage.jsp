@@ -59,6 +59,12 @@
                   <td>Target</td><td id="target" style="text-align: right"></td>
                 </tr>
                 <tr>
+                  <td>Batas Atas</td><td id="batasAtas" style="text-align: right"></td>
+                </tr>
+                <tr>
+                  <td>Batas Bawah</td><td id="batasBawah" style="text-align: right"></td>
+                </tr>
+                <tr>
                   <td>Actual</td><td id="actual" style="text-align: right"></td>
                 </tr>
                 <tr>
@@ -69,6 +75,9 @@
                 </tr>
                 <tr>
                   <td>Growth</td><td id="growth" style="text-align: right"></td>
+                </tr>
+                <tr>
+                  <td>Populate</td><td id="populate" style="text-align: center"></td>
                 </tr>
               </tbody>
             </table>

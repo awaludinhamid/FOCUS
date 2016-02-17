@@ -10,7 +10,7 @@ package com.safasoft.treeweb.bean.support;
  * @created Sep 15, 2015
  * @author awal
  */
-public class ListKpiHie extends ListKpi {
+public class ListKpiHie extends ListKpi implements Comparable<ListKpiHie> {
 
   private Object children;
   private String parentName;
@@ -41,5 +41,17 @@ public class ListKpiHie extends ListKpi {
    */
   public void setParentName(String parentName) {
     this.parentName = parentName;
+  }
+
+  /**
+   * Sorting method
+   * Added as much as field you want to include as an order by key
+   * @param o
+   * @return int 1=more, 0=equal, -1=less
+   */
+  @Override
+  public int compareTo(ListKpiHie o) {
+    Integer intParent = getParent();
+    return intParent.compareTo(o.getParent());
   }
 }

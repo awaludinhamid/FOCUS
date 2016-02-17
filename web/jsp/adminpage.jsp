@@ -75,25 +75,40 @@
           </div>
           <div class="modal-body" id="content">
             <div>  
-              <p><label>Type text to find: <input id="search-text" ng-model="searchText"></label></p>
+              <p>
+                <label>Type text to find:&nbsp;
+                  <input id="search-text" placeholder="ENTER to execute" title="ENTER to execute" ng-model="searchText">
+                </label>
+              </p>
               <table id="searchTextResults" class="table table-striped">
-                <tr class="admin-table-header" id="header-list-find"></tr>
-                <tr ng-repeat="dat in dataFindList | filter:searchText" id="data-list-find">
-                  <td>{{dat.col1}}</td>
-                  <td>{{dat.col2}}</td>
-                  <td>{{dat.col3}}</td>
-                  <td>{{dat.col4}}</td>
-                  <td>{{dat.col5}}</td>
-                  <td>{{dat.col6}}</td>
-                  <td>{{dat.col7}}</td>
-                  <td>{{dat.col8}}</td>
-                  <td>{{dat.col9}}</td>
-                  <td>{{dat.col10}}</td>
-                  <td class="admin-table-button" data-id="{{dat.id}}">
-                    <button class="btn btn-default" title="Go To Record"><span style="color: mediumaquamarine" class="glyphicon glyphicon-share-alt"></span></button>
-                  </td>
-                </tr>
-              </table>         
+                <thead>
+                  <tr class="admin-table-header" id="header-list-find"></tr>
+                </thead>
+                <tbody>
+                  <tr ng-repeat="dat in dataFindList | limitTo: limitNum" id="data-list-find">
+                    <td>{{dat.col1}}</td>
+                    <td>{{dat.col2}}</td>
+                    <td>{{dat.col3}}</td>
+                    <td>{{dat.col4}}</td>
+                    <td>{{dat.col5}}</td>
+                    <td>{{dat.col6}}</td>
+                    <td>{{dat.col7}}</td>
+                    <td>{{dat.col8}}</td>
+                    <td>{{dat.col9}}</td>
+                    <td>{{dat.col10}}</td>
+                    <td class="admin-table-button" data-id="{{dat.id}}">
+                      <button class="btn btn-default btn-sm" title="Go To Record">
+                        <span style="color: mediumaquamarine" class="glyphicon glyphicon-share-alt"></span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p style="text-align: right; font-weight: bold">
+                <span id="prevPageFind">Previous</span>
+                <span>&nbsp;&VerticalSeparator;&nbsp;</span>
+                <span id="nextPageFind">Next</span>
+              </p>
             </div>
           </div>
           <div class="modal-footer">

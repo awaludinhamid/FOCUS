@@ -6,7 +6,7 @@
 /* global btnPrimary, btnDefault, glyTriDown, glyClose, translation, unpickStyle, list_admin, bkLabel, lblStyle */
 
 $(document).ready(function(){
-  $("#loading").show();
+  loadingStateChange("show");
   
   /* VARIABLE DECLARATION */
   var optFlag = 0, //0=show all option, 1=show only selected option
@@ -28,7 +28,6 @@ $(document).ready(function(){
   
   //init process
   generateOption();
-  checkTableAccess();
   /* *** */
 
   /* ITEM CLICKED FUNCTION */
@@ -46,14 +45,14 @@ $(document).ready(function(){
     } else {
       $("#uploadSelect ul li:not('#"+thisId+"')").slideUp(translation);
       if(thisId !== prevId) {
-        $("#loading").show();
+        loadingStateChange("show");
         $("#uploadSelect ul li#"+prevId+" span").attr("class",unpickStyle);
         currId = thisId;
         currPageNo = 1;
         setTabelTitle();
         clearUploadFile();
         $(".nav-tabs a[href=#current-data]").tab("show");
-        checkTableAccess();
+        generateData();
       }
       optFlag = 0;
     }
@@ -62,7 +61,7 @@ $(document).ready(function(){
 
   // Click on button refresh
   $("#idRefresh").on("click", function() {
-    $("#loading").show();
+    loadingStateChange("show");
     //reload data
     generateData();
   });
@@ -74,7 +73,7 @@ $(document).ready(function(){
     //page no must be less or equal then maximum page allowed
     //reload data on clicked
     if(!$("#"+thisId).hasClass("active") && !$("#"+thisId).hasClass("disabled") && currPageNo <= maxPage) {
-      $("#loading").show();
+      loadingStateChange("show");
       if(thisId === "firstPage")
         currPageNo = 1;
       else if(thisId === "nextPage")
@@ -111,8 +110,8 @@ $(document).ready(function(){
   });
   
   // Change on file to be uploaded
-  $("#file-upload").on("change", function(){    
-    $("#loading").show();
+  $("#file-upload").on("change", function(){  
+    loadingStateChange("show");
     $("#btn-upload").prop("disabled",false);
     file = this.files[0];//update one file only
     //init file information
@@ -132,62 +131,69 @@ $(document).ready(function(){
     var formData = new FormData();
     formData.append("file", file);
     formData.append("fileType", file.type);
-    $.ajax({
-      type: "POST",
-      url: "/FOCUS/apps/data/upload/current",
-      data: formData,
-      contentType: false,
-      processData: false,
-      cache: false,
-      success: function (data,status) {
-        if (status === "success") {
-          headers = data.headers;
-          values = data.values;
-          $("#upload-data table thead tr").empty();
-          for(i = 0; i < headers.length; i++) {
-            $("#upload-data table thead tr#header-row").append(
-              "<th>"+headers[i]+"</th>"
-            );
+    formData.append("isHeader", $("label input[type='checkbox']").prop("checked"));
+    var execFunc = function() {
+      $.ajax({
+        type: "POST",
+        url: "../../apps/data/upload/current",
+        data: formData,
+        contentType: false,
+        processData: false,
+        cache: false,
+        success: function (data,status) {
+          if (status === "success") {
+            headers = data.headers;
+            values = data.values;
+            $("#upload-data table thead tr").empty();
+            for(var idx = 0; idx < headers.length; idx++) {
+              $("#upload-data table thead tr#header-row").append(
+                "<th>"+headers[idx]+"</th>"
+              );
+            }
+            generateDataUpl();
+            $(".nav-tabs a[href=#upload-data]").tab("show");
+            loadingStateChange("hide");
+          } else {
+            clearUploadFile();
+            modalCommonShow(3,"Read file unsuccessfully: status = " + status);
           }
-          generateDataUpl();
-          $(".nav-tabs a[href=#upload-data]").tab("show");
-          $("#loading").hide();
-        } else {
+        },
+        error: function (d) {
           clearUploadFile();
-          modalCommonShow(3,"Read file unsuccessfully: status = " + status);
+          modalCommonShow(1,"Error reading file: ", d);
+        },
+        fail: function(d) {
+          clearUploadFile();
+          modalCommonShow(2,"Failed to read file: ", d);
         }
-      },
-      error: function (d) {
-        clearUploadFile();
-        modalCommonShow(1,"Error reading file: ", d);
-      },
-      fail: function(d) {
-        clearUploadFile();
-        modalCommonShow(2,"Failed to read file: ", d);
-      }
-    });
+      });
+    };
+    checkCurrSessAndExec(execFunc);
   });
   
   // Click on upload button
   $("#btn-upload").click(function() {
-    $("#loading").show();
+    loadingStateChange("show");
     //upload file into database
-    $.post("/FOCUS/apps/data/upload",{tableName: currId, columnsSerial: columnsSerial},function(data,status) {
-      if (status === "success") {
-        $(".nav-tabs a[href=#current-data]").tab("show");
-        generateData();
-        $("#upload-status").html("&nbsp;Upload Status: SUCCESS");
-      } else {
-        modalCommonShow(3,"Upload file unsuccessfully: status = " + status);
-        $("#upload-status").html("&nbsp;Upload Status: NOT SUCCESS");
-      }
-    }).error(function (d) {
-      modalCommonShow(1,"Error upload file: ", d);
-      $("#upload-status").html("&nbsp;Upload Status: ERROR");
-    }).fail(function(d) {
-      modalCommonShow(2,"Failed to upload file: ", d);
-      $("#upload-status").html("&nbsp;Upload Status: FAILED");
-    });
+    var execFunc = function() {
+      $.post("../../apps/data/upload",{tableName: currId, columnsSerial: columnsSerial},function(data,status) {
+        if (status === "success") {
+          $(".nav-tabs a[href=#current-data]").tab("show");
+          generateData();
+          $("#upload-status").html("&nbsp;Upload Status: SUCCESS");
+        } else {
+          modalCommonShow(3,"Upload file unsuccessfully: status = " + status);
+          $("#upload-status").html("&nbsp;Upload Status: NOT SUCCESS");
+        }
+      }).error(function (d) {
+        modalCommonShow(1,"Error upload file: ", d);
+        $("#upload-status").html("&nbsp;Upload Status: ERROR");
+      }).fail(function(d) {
+        modalCommonShow(2,"Failed to upload file: ", d);
+        $("#upload-status").html("&nbsp;Upload Status: FAILED");
+      });
+    };
+    checkCurrSessAndExec(execFunc);
   });
   /* *** */
 
@@ -195,19 +201,42 @@ $(document).ready(function(){
   
   // Generate admin option list
   function generateOption() {
-    //generate option list from json file (has generated on scheduler process)
+    //generate option list of current user
     //styling each list
     //setup first record id and table title
-    for(i = 0; i < list_upload.length; i++) {
-      if(i === 0) {
-        currId = list_upload[i].code;
-        clearUploadFile();
-        setTabelTitle();
-        createList("upload",list_upload[i].code,list_upload[i].name,true);
-      } else {
-        createList("upload",list_upload[i].code,list_upload[i].name,false);
-      }
-    }
+    var execFunc = function() {
+      $.get("../../apps/data/upload/access",{uid: $("#uid").text()},function(data,status) {
+        if(status === "success") {
+          //identify user authorization has been set
+          if(data.length === 0) {
+            $("#mdl-common #myModalLabel").html("<h3><span style='color: yellow' class='glyphicon glyphicon-exclamation-sign'>&nbsp;Warning</span></h3>");
+            $("#mdl-common #content").text("You have no table access to upload");
+            $("#mdl-common").modal("show"); 
+            $("#uploadSelect, #uploadData, #userMenu ul li:not('#idLogout,#idHome')").hide();
+            loadingStateChange("hide");
+            return false;       
+          }
+          for(var idx = 0; idx < data.length; idx++) {
+            if(idx === 0) {
+              currId = data[idx].code;
+              clearUploadFile();
+              createList("upload",data[idx].code,data[idx].name,true);
+            } else {
+              createList("upload",data[idx].code,data[idx].name,false);
+            }
+          }
+          setTabelTitle();
+          generateData();
+        } else {
+          modalCommonShow(3,"Get user access unsuccessfully: status = " + status);
+        }
+      }).error(function (d) {
+        modalCommonShow(1,"Error get user access : ", d);
+      }).fail(function(d) {
+        modalCommonShow(2,"Failed to get user access : ", d);
+      }); 
+    };
+    checkCurrSessAndExec(execFunc);
   }
 
   // Generate table content 
@@ -216,57 +245,60 @@ $(document).ready(function(){
     //regenerate header
     //re-apply angular var data
     //generate paging and its status
-    $.get("/FOCUS/apps/data/table",{tableName: currId, pageNo: currPageNo},function(data,status) {
-      if(status === "success") {
-        contents = data.contents;
-        columns = data.columns;
-        maxPage = data.maxPage;
-        idColumn = data.idColumn;
-        columnsSerial = data.columnsSerial;
-        $("#current-data table thead tr").empty();
-        for(i = 0; i < columns.length; i++) {
-          var colDataType = columns[i].dataType;
-          $("#current-data table thead tr#header-row").append(
-            "<th>"+columns[i].columnName+"</th>"
-          );
-          $("#current-data table thead tr#datatype-row").append(
-            "<td>"+colDataType+"</td>"
-          );
-          $("#current-data table thead tr#format-row").append(
-            "<td>"+
-              (colDataType === "DATE" ? "DD-MON-YY | CHARACTER" : 
-                (colDataType === "NUMBER" ? "ANY FORMAT | NUMERIC" : "ANY FORMAT | CHARACTER"))+
-            "</td>"
-          );
+    var execFunc = function() {
+      $.get("../../apps/data/table",{tableName: currId, pageNo: currPageNo},function(data,status) {
+        if(status === "success") {
+          contents = data.contents;
+          columns = data.columns;
+          maxPage = data.maxPage;
+          idColumn = data.idColumn;
+          columnsSerial = data.columnsSerial;
+          $("#current-data table thead tr").empty();
+          for(var idx = 0; idx < columns.length; idx++) {
+            var colDataType = columns[idx].dataType;
+            $("#current-data table thead tr#header-row").append(
+              "<th>"+columns[idx].columnName+"</th>"
+            );
+            $("#current-data table thead tr#datatype-row").append(
+              "<td>"+colDataType+"</td>"
+            );
+            $("#current-data table thead tr#format-row").append(
+              "<td>"+
+                (colDataType === "DATE" ? "DD-MON-YY | CHARACTER" : 
+                  (colDataType === "NUMBER" ? "ANY FORMAT | NUMERIC" : "ANY FORMAT | CHARACTER"))+
+              "</td>"
+            );
+          }
+          var listData = $("#current-data table tbody");
+          var scope = listData.scope();
+          scope.dataList = contents;
+          scope.$apply();
+          listData.find("tr td").each(function() {
+            if($(this).index() > columns.length - 1 && $(this).children("button").attr("id") == null)
+              $(this).hide();
+          });
+          setPagination();
+          switchPageStatus();
+          loadingStateChange("hide");
+        } else {
+          modalCommonShow(3,"Generate table content unsuccessfully: status = " + status);
         }
-        var listData = $("#current-data table tbody");
-        var scope = listData.scope();
-        scope.dataList = contents;
-        scope.$apply();
-        listData.find("tr td").each(function() {
-          if($(this).index() > columns.length - 1 && $(this).children("button").attr("id") == null)
-            $(this).hide();
-        });
-        setPagination();
-        switchPageStatus();
-        $("#loading").hide();
-      } else {
-        modalCommonShow(3,"Generate table content unsuccessfully: status = " + status);
-      }
-    }).fail(function(d) {
-      modalCommonShow(2,"Failed to generate table content: ", d);
-    }).error(function(d) {
-      modalCommonShow(1,"Error generate table content: ", d);
-    });
+      }).fail(function(d) {
+        modalCommonShow(2,"Failed to generate table content: ", d);
+      }).error(function(d) {
+        modalCommonShow(1,"Error generate table content: ", d);
+      });
+    };
+    checkCurrSessAndExec(execFunc);
   }
   
   // Generate uploaded data into table
   function generateDataUpl() {
     var valuesTemp = [];//storing data paging
-    var idx = 0;
+    var idxTemp = 0;
     //only show current page
-    for(i = (currPageNoUpl-1)*resultPerPage; i < (resultPerPage*currPageNoUpl) && i < values.length; i++)
-      valuesTemp[idx++] = values[i];
+    for(var idx = (currPageNoUpl-1)*resultPerPage; idx < (resultPerPage*currPageNoUpl) && idx < values.length; idx++)
+      valuesTemp[idxTemp++] = values[idx];
     var listData = $("#upload-data table tbody");
     var scope = listData.scope();
     scope.dataListUpl = valuesTemp;
@@ -282,12 +314,12 @@ $(document).ready(function(){
 
   // Set table title
   function setTabelTitle() {
-    for(i = 0; i < list_upload.length; i++) {
-      if(list_upload[i].code === currId) {
-        $("div#right-title span").html("<span class='glyphicon glyphicon-th-list'></span>&nbsp;&nbsp;"+list_upload[i].name+" ["+currId +"]");
-        break;
+    $("div ul#upload li").each(function() {
+      if(this.id === currId) {
+        $("div#right-title span").html("<span class='glyphicon glyphicon-th-list'></span>&nbsp;&nbsp;"+$(this).text().trim()+" ["+currId +"]");
+        return false;
       }
-    }
+    });
   }
 
   // Switch page status
@@ -340,9 +372,9 @@ $(document).ready(function(){
     );
     var startPageNo = Math.floor(currPageNo/pagePerLoad) * pagePerLoad + (currPageNo%pagePerLoad === 0 ? 0 : 1); //start page no of serial page on page selected
     var endPageNo = maxPage < (startPageNo + pagePerLoad) ? maxPage : (startPageNo + pagePerLoad -1); //end page no of serial page on page selected
-    for(i = startPageNo; i <= endPageNo; i++) {
+    for(var idx = startPageNo; idx <= endPageNo; idx++) {
       $("div#current-data #pagination ul").append(
-        "<li id='page"+i+"'"+(i === currPageNo ? " class='active' " : "")+"><a href='#'>"+i+"</a></li>"
+        "<li id='page"+idx+"'"+(idx === currPageNo ? " class='active' " : "")+"><a href='#'>"+idx+"</a></li>"
       );
     }
     $("div#current-data #pagination ul").append(
@@ -362,9 +394,9 @@ $(document).ready(function(){
     maxPageUpl = (values.length === 0 ? 1 : (Math.floor(values.length/resultPerPage) + (values.length%resultPerPage === 0 ? 0 : 1)));
     var startPageNo = Math.floor(currPageNoUpl/pagePerLoad) * pagePerLoad + (currPageNoUpl%pagePerLoad === 0 ? 0 : 1); //start page no of serial page on page selected
     var endPageNo = maxPageUpl < (startPageNo + pagePerLoad) ? maxPageUpl : (startPageNo + pagePerLoad -1); //end page no of serial page on page selected
-    for(i = startPageNo; i <= endPageNo; i++) {
+    for(var idx = startPageNo; idx <= endPageNo; idx++) {
       $("div#upload-data #pagination ul").append(
-        "<li id='pageUpl"+i+"'"+(i === currPageNoUpl ? " class='active' " : "")+"><a href='#'>"+i+"</a></li>"
+        "<li id='pageUpl"+idx+"'"+(idx === currPageNoUpl ? " class='active' " : "")+"><a href='#'>"+idx+"</a></li>"
       );
     }
     $("div#upload-data #pagination ul").append(
@@ -388,30 +420,6 @@ $(document).ready(function(){
     var scope = listData.scope();
     scope.dataListUpl = [];
     scope.$apply();
-  }
-  
-  // Identify logged user privilege on current table
-  function checkTableAccess() {
-    $.get("/FOCUS/apps/data/upload/access",{tableName: currId},function(data,status) {
-      if(status === "success") {
-        //avoid showing page to unauthorized user
-        if(data === $("#uid").text()) {
-          $("#uploadData").show();
-          $("#uploadDataDenied").hide();
-          generateData();
-        } else {        
-          $("#uploadData").hide();
-          $("#uploadDataDenied").show();
-          $("#loading").hide();
-        }
-      } else {
-        modalCommonShow(3,"Get user access unsuccessfully: status = " + status);
-      }
-    }).error(function (d) {
-      modalCommonShow(1,"Error get user access : ", d);
-    }).fail(function(d) {
-      modalCommonShow(2,"Failed to get user access : ", d);
-    });    
   }
   /* *** */
 });

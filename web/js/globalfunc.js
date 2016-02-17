@@ -59,10 +59,13 @@
   }
 
   //generate number with comma thousand separator
-  function numberWithCommas(x) {
+  function numberFormat(x,suffix,prefix) {
+    if(x == null) return "";
+    if(suffix == null) suffix = "";
+    if(prefix == null) prefix = "";
     var parts = x.toString().split(".");
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return parts.join(".");
+    return prefix+parts.join(".")+suffix;
   }
 
   //show modal info with message 'content' and object reqObjTemp
@@ -90,7 +93,9 @@
       } else if(message.indexOf("ORA-02292") > -1 || message.indexOf("ORA-02266") > -1) {
         content += "Child/referential record found";
       } else if(message.indexOf("NullPointerException") > -1) {
-        content += "Process return null value";
+        content += "Process return null value";      
+      } else if(message.indexOf("ArrayIndexOutOfBoundsException") > -1) {
+        content += "Failed access array data";
       } else if(message.indexOf("ORA-12899") > -1 || message.indexOf("ORA-00942") > -1) {
         var msgTooLong = message.substring(message.indexOf("ORA-")+11);
         content += msgTooLong.substring(0,msgTooLong.indexOf("\n"));
@@ -99,9 +104,7 @@
       } else if(message.indexOf("ORA-00913") > -1) {
         content += "The number of upload file column more than table column";
       } else if(message.indexOf("ORA-01722") > -1 || message.indexOf("ORA-00932") > -1 || message.indexOf("ORA-01858")) {
-        content += "Datatype of file and table column mismatch";        
-      } else if(message.indexOf("ArrayIndexOutOfBoundsException") > -1) {
-        content += "Failed access array data";
+        content += "Datatype of file and table column mismatch or connection have been reset";  
       } else if(message.indexOf("InvalidFormatException") > -1 || message.indexOf("InvocationTargetException") > -1) {
         content += "Unsupported file type";
       } else {
@@ -111,7 +114,8 @@
     $("#mdl-common #content").html(content + " " +
             "<div><a href='../../jsp/support/loggingpage.jsp' target='_blank' class='btn btn-link'>show log</a></div>");
     $("#mdl-common").modal("show");
-    $("#loading").hide();
+    loadingStateChange("hide");
+    loadingStateChangeAlt("hide");
   }
   
   //breaking text into separate line when reach the limit to avoid very long label
@@ -133,4 +137,110 @@
     } else {
       return txt;
     }
+  }
+  
+  //show and running or hide and paused loading animation
+  function loadingStateChange(state) {
+    if(state == "show") {
+      $("#loading").show();
+    } else if(state == "hide") {
+      $("#loading").hide();
+    }    
+  }
+  
+  //show message on expired session or multi sessions and forced to create new single session
+  function recreateNewSession() {    
+    modalCommonShow(3,"Your session is expired or you have multi sessions, please login again.");
+    setTimeout(function() {
+      window.location.replace("../../apps/auth/logout");
+    }, 3000);
+  }
+
+  //amount of line on given text
+  function getLine(txt) {
+    return (breakLongText(txt).match(/<br\/>/g) || []).length + 1;
+  }
+  
+  //show and running or hide and paused loading animation
+  function loadingStateChangeAlt(state,itemToChange) {
+    if(state == "show") {
+      $(".loading-anime").show();
+      $(".loading-anime>img").css("animation-play-state","running");
+      $(".loading-anime>img").css("-webkit-animation-play-state","running");
+      if(itemToChange != null)
+        $(itemToChange).css("opacity","0.2");
+    } else if(state == "hide") {
+      $(".loading-anime").fadeOut();
+      $(".loading-anime>img").css("animation-play-state","paused");       
+      $(".loading-anime>img").css("-webkit-animation-play-state","paused");
+      if(itemToChange != null)
+        $(itemToChange).css("opacity","1");
+    }    
+  }
+
+  //show message (info='I',warning='W',error='E')
+  function showMessage(type,msg) {
+    var mdlObj = $("div#mdl-message");
+    var mdlObjHdr = mdlObj.find("div.modal-content div.modal-header>h4>span");
+    if(type === "I") {
+      mdlObjHdr.html("<span class='glyphicon glyphicon-info-sign'></span>&nbsp;Info");
+    } else if(type === "W") {
+      mdlObjHdr.html("<span class='glyphicon glyphicon-exclamation-sign'></span>&nbsp;Warning").css("color","yellow");
+    } else if(type === "E") {
+      mdlObjHdr.html("<span class='glyphicon glyphicon-warning-sign'></span>&nbsp;Error").css("color","#f55");;
+    }
+    mdlObj.find("div.modal-content div.modal-body>span").html(msg);
+    mdlObj.modal("show");
+  }
+
+  //get param value on url based on given key
+  function getUrlParamValue(urlTemp,paramKey) {
+    var paramTxt = urlTemp.substring(urlTemp.indexOf("?")+1);
+    var paramArr = paramTxt.split("&");
+    for(var idx in paramArr) {
+      var currParam = paramArr[idx].split("=");
+      if(paramArr[idx] === undefined || currParam.length < 1)
+        return "";
+      if(currParam[0] === paramKey)
+        return currParam[1];
+    }
+    return "";
+  }
+  
+  //check requested current session(active/inactive) before execution
+  function checkCurrSessAndExec(funcTemp) {    
+    $.get("../../apps/data/currentsession",function(data,status) {
+      if(status == "success") {
+        if(data == $("#sessionid").text()) {
+          funcTemp();
+        } else {
+          recreateNewSession();
+        }
+      } else {
+        modalCommonShow(3,"Get current session unsuccessfully: status = " + status);
+      }
+    }).fail(function(d) {
+      modalCommonShow(2,"Failed to get current session: ", d);
+    }).error(function(d) {
+      modalCommonShow(1,"Error getting current session: ", d);
+    });
+  }
+  
+  // find array on json object by given key and value
+  function traverseNode(jsonData, keyToFind, valToFind) {
+    var jsonDataTemp;
+    traverseCycle(jsonData);
+    function traverseCycle(jsonDataCycle) {
+      if(typeof jsonDataCycle === "object") {
+        $.each(jsonDataCycle,function(key,val) {
+          if(key === keyToFind && val === valToFind) {
+            jsonDataTemp = jsonDataCycle;
+            return false;
+          }
+          if(val !== null)
+            traverseCycle(val);
+        });
+      }
+    }
+    return jsonDataTemp;
   }

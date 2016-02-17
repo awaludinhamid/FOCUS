@@ -32,6 +32,7 @@ public class UsersDAO extends BaseDAO<Users> {
 
   
   private final String DELIMITER_COL = ",";
+  private final int RESULT_PER_PAGE = 10;
   /**
    * Generate user profile (access to view data: layer, level, etc)
    * @param userName
@@ -39,7 +40,7 @@ public class UsersDAO extends BaseDAO<Users> {
    */
   public List<UserProfileBean> getUserProfile(String userName) {
     return sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT ROWNUM id, user_name, layer_code dept_code, layer_name dept_name, layer_code||'-'||level_code member_code, level_desc member_name, " +
+            /*"SELECT ROWNUM id, user_name, layer_code dept_code, layer_name dept_name, layer_code||'-'||level_code member_code, level_desc member_name, " +
               "fifapps_code member_list_code, node_name member_list_name, parent_level_code parent_member_code " +
               "FROM ( " +
               "SELECT DISTINCT user_name, layer_code, layer_name, level_code, level_desc, " +
@@ -49,7 +50,7 @@ public class UsersDAO extends BaseDAO<Users> {
                 "SELECT lum.user_name, ml.layer_code, ml.layer_name, mlv.level_code, mlv.level_desc, " +
                   "DECODE(mlv.level_id,4,mn1.fifapps_code||'p',mn1.fifapps_code) fifapps_code, mn1.node_name, " +
                   "nna.node_child, nna.node_parent, mn.level_id mn_level_id, mn1.level_id mn1_level_id " +
-                  "FROM mst_layer ml, mst_level mlv, mst_node mn, node_node_assc nna, layer_user_map lum, mst_node mn1 " +
+                  "FROM mst_layer ml, mst_level mlv, mst_node mn, node_node_assc nna, ff_layer_user_map lum, mst_node mn1 " +
                   "WHERE lum.user_name = :userName " +
                     "AND ml.layer_id = lum.layer_id " +
                     "AND ml.layer_id = nna.layer_id " +
@@ -58,7 +59,39 @@ public class UsersDAO extends BaseDAO<Users> {
                     "AND lum.node_id = mn1.node_id) " +
                 "CONNECT BY PRIOR node_child = node_parent " +
                 "START WITH mn_level_id = mn1_level_id " +
-		"ORDER BY layer_name, lvl)")
+		"ORDER BY layer_name, lvl)"*/
+            "SELECT ROWNUM id, user_name, dept_code, dept_name, member_code, member_name, member_list_code, member_list_name, parent_member_code " +
+              "FROM ( " +
+              "SELECT tree.user_name, ml.layer_code dept_code, ml.layer_name dept_name, " +
+                "ml.layer_code||'-'||mlv.level_code member_code, level_desc member_name, " +
+                "DECODE(mlv.level_id,4,fifapps_code||'p',fifapps_code) member_list_code, " +
+                "node_name member_list_name, " +
+                "tree.level_code parent_member_code " +
+                "FROM ( " +
+                "SELECT DISTINCT user_name, child_level, parent_level, layer_id, node_id, level_code, " +
+                  "fifapps_code, node_name, lvl FROM ( " +
+                  "SELECT user_name, node_id, child_level,parent_level,layer_id, fifapps_code, node_name, " +
+                    "level_code, LEVEL lvl " +
+                    "FROM ( " +
+                    "SELECT lum.user_name, lum.node_id, ml.level_code, ml.level_id, lla.child_level, lla.parent_level, lla.layer_id, " +
+                      "mn.fifapps_code, mn.node_name " + 
+                      "FROM ff_layer_user_map lum " +
+                          ",level_level_assc lla " +
+                          ",mst_level ml " +
+                          ",mst_node mn " +
+                      "WHERE lum.user_name = :userName " +
+                        "AND lum.layer_id = lla.layer_id " +
+                        "AND ml.level_id = mn.level_id " +
+                        "AND mn.node_id = lum.node_id) " +
+                    "CONNECT BY PRIOR child_level = parent_level " +
+                    "START WITH child_level = 1 " +
+                ")) tree " +
+                ",mst_layer ml " +
+                ",mst_level mlv " +
+                "WHERE ml.layer_id = tree.layer_id " +
+                  "AND mlv.level_id = tree.child_level " +
+                "ORDER BY ml.layer_name, tree.lvl)"
+            )
             .addEntity(UserProfileBean.class)
             .setString("userName", userName)
             .list();
@@ -76,11 +109,16 @@ public class UsersDAO extends BaseDAO<Users> {
    */
   public List<ListKpi> getListKpi(String dept, String members, String coy, String lob, String dtsTable, String dtsTableLastMonth) {
     return sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, url, dept, " +
-              "NVL(target,0) target, NVL(actual,0) actual, NVL(last_month,0) last_month, NVL(achieve,0) achieve, NVL(growth,0) growth, " +
+            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, url, dept, type_kpi, satuan, " +
+              "target, actual, last_month, achieve, growth, batas_atas, batas_bawah, system_id, " +
               "CASE " +
-                "WHEN parent = -1 THEN 'cyan' " +
-                "WHEN (data_kpi IS NULL OR actual = 0 OR type_kpi = 'N') THEN 'grey' " +
+                "WHEN INSTR('"+dtsTable+"','_R') > 0 THEN TO_CHAR(date_populate,'DD-MON-YYYY HH24:MI:SS') " +//applied to realtime, aware of table name changed
+                "ELSE TO_CHAR(date_populate,'DD-MON-YYYY') " +
+              "END date_populate, " +
+              "CASE " +
+                "WHEN parent = -1 THEN 'purple' " +
+                "WHEN (data_kpi IS NULL OR actual IS NULL OR type_kpi = 'N') THEN 'grey' " +
+                "WHEN ((target IS NULL AND type_kpi IN ('D','I')) OR batas_atas IS NULL OR batas_bawah IS NULL) THEN 'blue' " +
                 "WHEN type_kpi = 'X' THEN " +
                   "CASE " +
                     "WHEN actual <= batas_bawah THEN 'green' " +
@@ -101,81 +139,73 @@ public class UsersDAO extends BaseDAO<Users> {
                   "END " +
               "END color, " +
               "CASE " +
-                "WHEN (data_kpi IS NULL OR last_month = 0) THEN 'btn btn-default btn-sm' " +
-                "WHEN type_kpi IN ('X','D') THEN " +
-                  "CASE " +
-                    "WHEN actual < last_month THEN 'btn btn-success btn-sm' " +
-                    "WHEN actual > last_month THEN 'btn btn-danger btn-sm' " +
-                    "ELSE 'btn btn-warning btn-sm' " +
-                  "END " +
+                "WHEN (data_kpi IS NULL OR actual IS NULL OR last_month IS NULL) THEN 'btn btn-default btn-sm' " +
+                "WHEN type_growth IN ('B','C') THEN " +
+                  "DECODE(SIGN(growth),-1,'btn btn-success btn-sm',1,'btn btn-danger btn-sm','btn btn-warning btn-sm') " +
                 "ELSE " +
-                  "CASE " +
-                    "WHEN actual > last_month THEN 'btn btn-success btn-sm' " +
-                    "WHEN actual < last_month THEN 'btn btn-danger btn-sm' " +
-                    "ELSE 'btn btn-warning btn-sm' " +
-                  "END " +
+                  "DECODE(SIGN(growth),1,'btn btn-success btn-sm',-1,'btn btn-danger btn-sm','btn btn-warning btn-sm') " +
               "END button, " +
               "CASE " +
-                "WHEN (data_kpi IS NULL OR last_month = 0) THEN 'glyphicon glyphicon-minus-sign' " +
-                "WHEN type_kpi IN ('X','D') THEN " +
-                  "CASE " +
-                    "WHEN actual < last_month THEN 'glyphicon glyphicon-circle-arrow-up' " +
-                    "WHEN actual > last_month THEN 'glyphicon glyphicon-circle-arrow-down' " +
-                    "ELSE 'glyphicon glyphicon-circle-arrow-right' " +
-                  "END " +
+                "WHEN (data_kpi IS NULL OR actual IS NULL OR last_month IS NULL) THEN 'glyphicon glyphicon-minus-sign' " +
+                "WHEN type_growth IN ('B','C') THEN " +
+                  "DECODE(SIGN(growth),-1,'glyphicon glyphicon-circle-arrow-up',1,'glyphicon glyphicon-circle-arrow-down'," +
+                    "'glyphicon glyphicon-circle-arrow-right') " +
                 "ELSE " +
-                  "CASE " +
-                    "WHEN actual > last_month THEN 'glyphicon glyphicon-circle-arrow-up' " +
-                    "WHEN actual < last_month THEN 'glyphicon glyphicon-circle-arrow-down' " +
-                    "ELSE 'glyphicon glyphicon-circle-arrow-right' " +
-                  "END " +
+                  "DECODE(SIGN(growth),1,'glyphicon glyphicon-circle-arrow-up',-1,'glyphicon glyphicon-circle-arrow-down'," +
+                    "'glyphicon glyphicon-circle-arrow-right') " +
               "END icon " +
               "FROM ( " +
               "SELECT " +
-                "kpi.child_id id, kpi.parent_id parent, kpi.child_id kpi, kpi.type_kpi, kpi.lvl, " +
+                "kpi.child_id id, kpi.parent_id parent, kpi.child_id kpi, kpi.type_kpi, kpi.satuan, kpi.lvl, " +
                 ":members members, :coy coy, :lob lob, '#' url, :dept dept, " +
-                "data.kpi data_kpi, NVL(data.target,0) target, NVL(data.actual,0) actual, " +
-                "NVL(data.last_month,0) last_month, NVL(data.batas_atas,0) batas_atas, NVL(data.batas_bawah,0) batas_bawah, " +
+                "data.kpi data_kpi, target, actual, " +
+                "last_month, batas_atas, batas_bawah, date_populate, " +
                 "'kpi_'||:members||'_'||:coy||'_'||:lob kpi_type, " +
+                "kpi.system_id, kpi.type_growth, " +
                 "CASE " +
+                  "WHEN (kpi.parent_id IS NULL OR kpi.parent_id = -1) THEN 'KPI' " + 
+                  /*
                   "WHEN (kpi.parent_id IS NULL OR kpi.parent_id = -1) THEN 'KPI '|| " +
                     "(SELECT node_name FROM mst_node WHERE fifapps_code = :members AND ROWNUM = 1)||' '|| " +
-                    "(SELECT coy_short_name FROM fs_mst_company_vw WHERE coy_id = :coy AND ROWNUM = 1)||' '|| " +
-                    "UPPER(:lob) " +
+                    "(SELECT name FROM (SELECT '99' code, 'ALL COY' name from dual UNION ALL SELECT coy_id code, coy_short_name name FROM fs_mst_company_vw) WHERE code = :coy AND ROWNUM = 1)||' '|| " +
+                    "(SELECT name FROM (SELECT 'alb' code, 'ALL BU' name from dual UNION ALL SELECT LOWER(buss_unit) code, DECODE(buss_unit,'REFI','UFI',buss_unit) name FROM fs_mst_business_unit_vw) WHERE code = :lob AND ROWNUM = 1) " +
+                  */
                   "ELSE kpi.kpi_name " +
                 "END name, " +
                 "CASE " +
-                  "WHEN data.kpi IS NULL THEN 0 " +
-                  "WHEN kpi.type_kpi IN ('X','Y','N') THEN 0 " +
+                  "WHEN data.kpi IS NULL OR kpi.type_kpi IN ('X','Y','N') THEN NULL " +
                   "WHEN kpi.type_kpi = 'D' THEN " +
                     "CASE " +
+                      "WHEN data.actual IS NULL THEN NULL " +
                       "WHEN data.actual = 0 THEN 0 " +
                       "ELSE ROUND(data.target/data.actual*100,2) " +
                     "END " +
                   "ELSE " +
                     "CASE " +
+                      "WHEN data.target IS NULL THEN NULL " +
                       "WHEN data.target = 0 THEN 0 " +
                       "ELSE ROUND(data.actual/data.target*100,2) " +
                     "END " +
                 "END achieve, " +
                 "CASE " +
-                  "WHEN data.kpi IS NULL THEN 0 " +
-                  "WHEN data.last_month = 0 THEN 0 " +
-                  "ELSE ROUND((data.actual-data.last_month)/data.last_month*100,2) " +
+                  "WHEN data.kpi IS NULL OR data.last_month IS NULL THEN NULL " +
+                  "WHEN kpi.type_growth IN ('C','D') THEN data.actual-data.last_month " +
+                  "ELSE DECODE(data.last_month,0,0,ROUND((data.actual-data.last_month)/data.last_month*100,2)) " +
                 "END growth " +
                 "FROM ( " +
                 "SELECT " +
                   "abd.kpi_id kpi, " +
-                  "NVL(abd.target,0) target, " +
-                  "NVL(abd.actual,0) actual, " +
-                  "NVL(abd.batas_atas,0) batas_atas, " +
-                  "NVL(abd.batas_bawah,0) batas_bawah, " +
-                    "NVL((SELECT actual FROM "+dtsTableLastMonth+" " +
+                  "target, " +
+                  "actual, " +
+                  "batas_atas, " +
+                  "batas_bawah, " +
+                  "date_populate, " +
+                    "(SELECT actual FROM "+dtsTableLastMonth+" " +
                       "WHERE kpi_id = abd.kpi_id " +
                       "AND node_id = abd.node_id  " +
                       "AND coy_id = abd.coy_id  " +
                       "AND buss_unit = abd.buss_unit  " +
-                      "AND ROWNUM = 1),0) last_month, " +
+                      "AND ROWNUM = 1) last_month, " +
                   "mn.node_name " +
                   "FROM "+dtsTable+" abd " +
                       ",mst_node mn " +
@@ -188,12 +218,12 @@ public class UsersDAO extends BaseDAO<Users> {
                     "AND mn.node_id = abd.node_id " +
                     "AND mn.node_id = nna.node_child " +
                     "AND nna.layer_id = ml.layer_id) data, ( " +
-                    "SELECT 0 child_id, -1 parent_id, 'KPI NASIONAL' kpi_name, NULL type_kpi, 0 lvl " +
+                    "SELECT 0 child_id, -1 parent_id, 'KPI NASIONAL' kpi_name, NULL type_kpi, NULL satuan, 0 system_id, NULL type_growth, 0 lvl " +
                       "FROM DUAL " +
                     "UNION ALL " +
-                    "SELECT child_id, parent_id, kpi_name, type_kpi, LEVEL lvl " +
+                    "SELECT child_id, parent_id, kpi_name, type_kpi, satuan, system_id, type_growth, LEVEL lvl " +
                       "FROM ( " +
-                      "SELECT kka.parent_id, kka.child_id, mk.kpi_name, mk.type_kpi " +
+                      "SELECT kka.parent_id, kka.child_id, mk.kpi_name, mk.type_kpi, mk.satuan, mk.system_id, mk.type_growth " +
                         "FROM kpi_kpi_assc kka " +
                             ",mst_kpi mk " +
                         "WHERE kka.child_id = mk.kpi_id " +
@@ -224,11 +254,16 @@ public class UsersDAO extends BaseDAO<Users> {
 
   public List<ListKpi> getListKpi(String dept, String members, String coy, String lob, String kpi, String dtsTable, String dtsTableLastMonth) {
     return sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, url, dept, " +
-              "NVL(target,0) target, NVL(actual,0) actual, NVL(last_month,0) last_month, NVL(achieve,0) achieve, NVL(growth,0) growth, " +
+            "SELECT name, id, parent, kpi_type, kpi, members, coy, lob, url, dept, type_kpi, satuan, " +
+              "target, actual, last_month, achieve, growth, batas_atas, batas_bawah, 0 system_id, " +
               "CASE " +
-                "WHEN parent = -1 THEN 'cyan' " +
-                "WHEN (data_id IS NULL OR actual = 0 OR type_kpi = 'N') THEN 'grey' " +
+                "WHEN INSTR('"+dtsTable+"','_R') > 0 THEN TO_CHAR(date_populate,'DD-MON-YYYY HH24:MI:SS') " +//applied to realtime, aware of table name changed
+                "ELSE TO_CHAR(date_populate,'DD-MON-YYYY') " +
+              "END date_populate, " +
+              "CASE " +
+                "WHEN parent = -1 THEN 'purple' " +
+                "WHEN (data_id IS NULL OR actual IS NULL OR type_kpi = 'N') THEN 'grey' " +
+                "WHEN ((target IS NULL AND type_kpi IN ('D','I')) OR batas_atas IS NULL OR batas_bawah IS NULL) THEN 'blue' " +
                 "WHEN type_kpi = 'X' THEN " +
                   "CASE " +
                     "WHEN actual <= batas_bawah THEN 'green' " +
@@ -249,59 +284,46 @@ public class UsersDAO extends BaseDAO<Users> {
                   "END " +
               "END color, " +
               "CASE " +
-                "WHEN (data_id IS NULL OR last_month = 0) THEN 'btn btn-default btn-sm' " +
-                "WHEN type_kpi IN ('X','D') THEN " +
-                  "CASE " +
-                    "WHEN actual < last_month THEN 'btn btn-success btn-sm' " +
-                    "WHEN actual > last_month THEN 'btn btn-danger btn-sm' " +
-                    "ELSE 'btn btn-warning btn-sm' " +
-                  "END " +
+                "WHEN (data_id IS NULL OR actual IS NULL OR last_month IS NULL) THEN 'btn btn-default btn-sm' " +
+                "WHEN type_growth IN ('B','C') THEN " +
+                  "DECODE(SIGN(growth),-1,'btn btn-success btn-sm',1,'btn btn-danger btn-sm','btn btn-warning btn-sm') " +
                 "ELSE " +
-                  "CASE " +
-                    "WHEN actual > last_month THEN 'btn btn-success btn-sm' " +
-                    "WHEN actual < last_month THEN 'btn btn-danger btn-sm' " +
-                    "ELSE 'btn btn-warning btn-sm' " +
-                  "END " +
+                  "DECODE(SIGN(growth),1,'btn btn-success btn-sm',-1,'btn btn-danger btn-sm','btn btn-warning btn-sm') " +
               "END button, " +
               "CASE " +
-                "WHEN (data_id IS NULL OR last_month = 0) THEN 'glyphicon glyphicon-minus-sign' " +
-                "WHEN type_kpi IN ('X','D') THEN " +
-                  "CASE " +
-                    "WHEN actual < last_month THEN 'glyphicon glyphicon-circle-arrow-up' " +
-                    "WHEN actual > last_month THEN 'glyphicon glyphicon-circle-arrow-down' " +
-                    "ELSE 'glyphicon glyphicon-circle-arrow-right' " +
-                  "END " +
+                "WHEN (data_id IS NULL OR actual IS NULL OR last_month IS NULL) THEN 'glyphicon glyphicon-minus-sign' " +
+                "WHEN type_growth IN ('B','C') THEN " +
+                  "DECODE(SIGN(growth),-1,'glyphicon glyphicon-circle-arrow-up',1,'glyphicon glyphicon-circle-arrow-down'," +
+                    "'glyphicon glyphicon-circle-arrow-right') " +
                 "ELSE " +
-                  "CASE " +
-                    "WHEN actual > last_month THEN 'glyphicon glyphicon-circle-arrow-up' " +
-                    "WHEN actual < last_month THEN 'glyphicon glyphicon-circle-arrow-down' " +
-                    "ELSE 'glyphicon glyphicon-circle-arrow-right' " +
-                  "END " +
+                  "DECODE(SIGN(growth),1,'glyphicon glyphicon-circle-arrow-up',-1,'glyphicon glyphicon-circle-arrow-down'," +
+                    "'glyphicon glyphicon-circle-arrow-right') " +
               "END icon " +
               "FROM ( " +
               "SELECT mst.name, mst.id, mst.parent, :kpi kpi, :members members, :coy coy, :lob lob, :dept dept, " +
                 "'kpi_'||:members||'_'||:kpi||'_'||:coy||'_'||:lob kpi_type, " +
-                "'#' url, data.id data_id, data.type_kpi, NVL(data.last_month,0) last_month,  " +
-                "NVL(data.target,0) target, NVL(data.actual,0) actual, " +
-                "NVL(data.batas_atas,0) batas_atas, NVL(data.batas_bawah,0) batas_bawah, " +
+                "'#' url, data.id data_id, data.type_kpi, data.satuan, data.type_growth, data.last_month, data.date_populate, " +
+                "target, actual, " +
+                "batas_atas, batas_bawah, " +
                 "CASE " +
-                  "WHEN data.id IS NULL THEN 0 " +
-                  "WHEN data.type_kpi IN ('X','Y','N') THEN 0 " +
+                  "WHEN data.id IS NULL OR data.type_kpi IN ('X','Y','N') THEN NULL " +
                   "WHEN data.type_kpi = 'D' THEN " +
                     "CASE " +
+                      "WHEN data.actual IS NULL THEN NULL " +
                       "WHEN data.actual = 0 THEN 0 " +
                       "ELSE ROUND(data.target/data.actual*100,2) " +
                     "END " +
                   "ELSE " +
-                  "CASE " +
-                    "WHEN data.target = 0 THEN 0 " +
-                    "ELSE ROUND(data.actual/data.target*100,2) " +
-                  "END " +
+                    "CASE " +
+                      "WHEN data.target IS NULL THEN NULL " +
+                      "WHEN data.target = 0 THEN 0 " +
+                      "ELSE ROUND(data.actual/data.target*100,2) " +
+                    "END " +
                 "END achieve, " +
                 "CASE " +
-                  "WHEN data.id IS NULL THEN 0 " +
-                  "WHEN data.last_month = 0 THEN 0 " +
-                  "ELSE ROUND((data.actual-data.last_month)/data.last_month*100,2) " +
+                  "WHEN data.id IS NULL OR data.last_month IS NULL THEN NULL " +
+                  "WHEN data.type_growth IN ('C','D') THEN data.actual-data.last_month " +
+                  "ELSE DECODE(data.last_month,0,0,ROUND((data.actual-data.last_month)/data.last_month*100,2)) " +
                 "END growth " +
                 "FROM ( " +
                 "SELECT DISTINCT parent, name, id, child_code, LEVEL lvl " +
@@ -317,13 +339,14 @@ public class UsersDAO extends BaseDAO<Users> {
                   "START WITH child_code = :members " +
                   "CONNECT BY PRIOR id = parent " +
                 ") mst, ( " +
-                "SELECT abd.node_id id, abd.target, abd.actual, abd.batas_atas, abd.batas_bawah, mk.type_kpi, " +
-                  "NVL((SELECT actual FROM "+dtsTableLastMonth+" " +
+                "SELECT abd.node_id id, abd.target, abd.actual, abd.batas_atas, abd.batas_bawah, abd.date_populate, " +
+                  "mk.type_kpi, mk.satuan, mk.type_growth, " +
+                  "(SELECT actual FROM "+dtsTableLastMonth+" " +
                     "WHERE kpi_id = abd.kpi_id " +
                     "AND node_id = abd.node_id  " +
                     "AND coy_id = abd.coy_id  " +
                     "AND buss_unit = abd.buss_unit  " +
-                    "AND ROWNUM = 1),0) last_month " +
+                    "AND ROWNUM = 1) last_month " +
                   "FROM mst_kpi mk " +
                       ","+dtsTable+" abd " +
                   "WHERE mk.kpi_id = :kpi " +
@@ -350,8 +373,7 @@ public class UsersDAO extends BaseDAO<Users> {
    */
   public TableContent getListTableContentByPage(String tableName, int pageNo) {
     //
-    int resultPerPage = 10;
-    int firstResult = (pageNo - 1) * resultPerPage;
+    int firstResult = (pageNo - 1) * RESULT_PER_PAGE;
     int maxId = 0;
     Map<String,List<ListBean>> dropDownListMap = new HashMap<String,List<ListBean>>();
     Map<String,List<ColumnCons>> columnConsMap = new HashMap<String,List<ColumnCons>>();
@@ -375,7 +397,7 @@ public class UsersDAO extends BaseDAO<Users> {
               "ORDER BY " + orderByColumn)
             .addEntity(TableValue.class)
             .setFirstResult(firstResult)
-            .setMaxResults(resultPerPage)
+            .setMaxResults(RESULT_PER_PAGE)
             .list();
     // generate maximum page and maximum id (specific to PK with NUMBER datatype)
     BigDecimal bd = (BigDecimal) sessionFactory.getCurrentSession().createSQLQuery(
@@ -383,7 +405,7 @@ public class UsersDAO extends BaseDAO<Users> {
             .list()
             .get(0);
     int recordCount = bd.intValue();
-    int maxPage = recordCount == 0 ? 1 : (recordCount/resultPerPage + (recordCount%resultPerPage == 0 ? 0 : 1));
+    int maxPage = recordCount == 0 ? 1 : (recordCount/RESULT_PER_PAGE + (recordCount%RESULT_PER_PAGE == 0 ? 0 : 1));
     if(columnPK != null && columnPK.getDataType().equals("NUMBER")) {
       BigDecimal bdm = (BigDecimal) sessionFactory.getCurrentSession().createSQLQuery(
               "SELECT NVL(MAX("+columnPK.getColumnName()+"),0)+1 max_id FROM " + tableName)
@@ -419,15 +441,48 @@ public class UsersDAO extends BaseDAO<Users> {
    * @param tableName
    * @param columnsSerialExt
    * @param orderByColumn
+   * @param currPageNoFind
    * @return list of TableValue object
    */
-  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn) {
+  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn, int currPageNoFind) {
     // generate value
     return sessionFactory.getCurrentSession().createSQLQuery(
             "SELECT " + columnsSerialExt +
               " FROM " + tableName +
               " ORDER BY " + orderByColumn)
             .addEntity(TableValue.class)
+            .setFirstResult((currPageNoFind - 1) * RESULT_PER_PAGE)
+            .setMaxResults(RESULT_PER_PAGE + 1)
+            .list();
+  }
+  
+  /**
+   * Generate list of given table value including filter
+   * @param tableName
+   * @param columnsSerialExt
+   * @param orderByColumn
+   * @param searchText
+   * @param currPageNoFind
+   * @return list of TableValue object
+   */
+  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn, String searchText, int currPageNoFind) {
+    String[] arrColumn = columnsSerialExt.split(",");
+    StringBuilder sb = new StringBuilder();
+    for(String str : arrColumn) {
+      if(str.contains("NULL"))
+        break;
+      sb.append("UPPER(").append(str.trim().substring(0,str.trim().indexOf(" "))).append(")")
+              .append(" LIKE '%").append(searchText.toUpperCase()).append("%' OR ");
+    }
+    // generate value
+    return sessionFactory.getCurrentSession().createSQLQuery(
+            "SELECT " + columnsSerialExt +
+              " FROM " + tableName +
+              " WHERE " + sb.substring(0,sb.lastIndexOf("OR ")) +
+              " ORDER BY " + orderByColumn)
+            .addEntity(TableValue.class)
+            .setFirstResult((currPageNoFind - 1) * RESULT_PER_PAGE)
+            .setMaxResults(RESULT_PER_PAGE + 1)
             .list();
   }
   
@@ -454,20 +509,24 @@ public class UsersDAO extends BaseDAO<Users> {
             .get(0);
     return bdm.intValue();
   }
-  
+
   /**
-   * Get user who has access on table upload
-   * @param tableName
+   * List upload table of given user
+   * @param userAccess
    * @return 
    */
-  public String getUploadTableAccess(String tableName) {
-    return (String) sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT user_access " +
+  public List<ListBean> getListUploadTableByUser(String userAccess) {
+    return sessionFactory.getCurrentSession().createSQLQuery(
+            "SELECT name, table_name code " +
               "FROM ff_upload_table " +
-              "WHERE table_name = :tableName " +
-                "AND ROWNUM = 1")
-            .setString("tableName", tableName)
-            .list().get(0);
+              "WHERE user_access = :userAccess " +
+              "OR :userAccess IN ( " +
+                "SELECT user_name " +
+                  "FROM users " +
+                  "WHERE user_access = 1)")
+            .addEntity(ListBean.class)
+            .setString("userAccess",userAccess)
+            .list();
   }
 
   // Generate drop down list value (code and name) of given table

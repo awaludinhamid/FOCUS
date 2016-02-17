@@ -10,6 +10,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * Session template when accessing database via java bean
+ * @param <T>
  * @created Mar 31, 2013
  * @author awal
  */

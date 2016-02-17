@@ -41,8 +41,8 @@ div#adminData {
   height: 30px;
 }
 
-#mdl-find .modal-dialog {
-  width: auto;
+#mdl-find table tr th, #mdl-find table tr td {
+  font-size: 10px;
 }
 
 .current-record {

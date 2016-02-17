@@ -22,24 +22,16 @@
       <ul id="upload" class="list-unstyled">
       </ul>
     </div>
-    <div id="uploadDataDenied" class="center-front-pos default-message" style="left: 5%" hidden>
-      <h1>
-        <span class="glyphicon glyphicon-minus-sign"></span>
-        <br/><br/>
-        <div>
-          <span>Sorry, you have no privilege to access this table</span>
-        </div>
-      </h1>
-    </div>
-    <div id="uploadData" class="center-front-pos" hidden>
+    <div id="uploadData" class="center-front-pos">
       <div>
         <p>
           <label class="btn btn-primary" for="file-upload">
             <input id="file-upload" name="file-upload" type="file" style="display:none;" accept=".xls;*.xlsx">
             <span class="glyphicon glyphicon-file"></span>&nbsp;Select Files..
           </label>
-          <button id="btn-upload" class="btn btn-info"><span class="glyphicon glyphicon-upload"></span>&nbsp;Upload</button>
+          <button id="btn-upload" class="btn btn-info"><span class="glyphicon glyphicon-upload"></span>&nbsp;Upload</button>          
         </p>
+        <label style="font-size: 12px"><input type="checkbox" value="1" checked>&nbsp;First Row Heading</label>
         <table class="upload-data-table">
           <tr class="upload-status"><td id="upload-status"></td></tr>
           <tr><td id="file-name"></td></tr>

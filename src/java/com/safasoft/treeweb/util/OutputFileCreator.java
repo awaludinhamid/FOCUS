@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.pdfbox.exceptions.COSVisitorException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.edit.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.poi.ss.usermodel.Cell;
@@ -29,30 +30,66 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
  */
 public class OutputFileCreator {
   
+  private final File file;
+  private final List<String> titles;
+  private final List<ColumnHeader> headers;
+  private final List<ListKpiHie> content;
+  private final String fileExt;
+  private final String kpiBrkdwnFlag;
+  
   /**
-   * PDF file creator
+   * Container with parameter only accepted
    * @param file
    * @param titles
    * @param headers
    * @param content
+   * @param fileExt
+   * @param kpiBrkdwnFlag 
+   */
+  public OutputFileCreator(File file, List<String> titles, List<ColumnHeader> headers, List<ListKpiHie> content, String fileExt, String kpiBrkdwnFlag) {
+    this.file = file;
+    this.titles = titles;
+    this.headers = headers;
+    this.content = content;
+    this.fileExt = fileExt;
+    this.kpiBrkdwnFlag = kpiBrkdwnFlag;
+  }
+  
+  /**
+   * Created file by extention given: excel, PDF, or text
    * @throws IOException
    * @throws COSVisitorException 
    */
-  public void createPDF(File file, List<String> titles, List<ColumnHeader> headers, List<ListKpiHie> content)
-          throws IOException, COSVisitorException {
+  public void createFile() throws IOException, COSVisitorException {
+    if(fileExt.equals("xlsx")) {
+      createExcel();
+    } else if(fileExt.equals("pdf")) {
+      createPDF();
+    } else if(fileExt.equals("txt")) {
+      createText();
+    }    
+  }
+  
+  //PDF file creator
+  private void createPDF() throws IOException, COSVisitorException {
     //object preparation
     PDDocument doc = new PDDocument();
-    final int margin = 10;//space between page contain and page border
+    //landscape
+    final int pageWidth = 842; //page width
+    final int pageHeight = 595; //page height
+    //
+    final int downMargin = 10;//space between page contain and page bottom border
+    final int leftMargin = 50;//space between page contain and page left border
     final int rowHeight = 10;//line height
     final int cellMargin = 2;//space between text and line
     final int cols = headers.size();
-    final int maxRowsPerPage = 78;//move to next page when reach this limit
+    final int maxRowsPerPage = (pageHeight/rowHeight) - (2*downMargin/rowHeight);//move to next page when reach this limit
     final int titleRows = titles.size() + 1;//plus space
     final int startLineY = (maxRowsPerPage - titleRows) * rowHeight;//top position where object start to draw
     final int recordsNum = content.size();
     int num = 0;
     //set table width
-    int tableWidth = margin;
+    int tableWidth = leftMargin;
     for(ColumnHeader hdr : headers)
       tableWidth += hdr.getWidth() + cellMargin;
     //loop through page
@@ -61,19 +98,21 @@ public class OutputFileCreator {
       int tableRows = recordsNum - num + 1 < maxRowsPerPage - titleRows ? recordsNum - num + 1 : maxRowsPerPage - titleRows;//plus header
       //page preparation
       PDPage page = new PDPage();
+      PDRectangle pdr = new PDRectangle(pageWidth, pageHeight);
+      page.setMediaBox(pdr);
       doc.addPage(page);
       PDPageContentStream contentStream = new PDPageContentStream(doc, page);
       contentStream.setLineWidth(1);
       //draw table horizontal line
-      int lineCordY = margin + startLineY;
+      int lineCordY = downMargin + startLineY;
       for (int i = 0; i <= tableRows; i++) {
-        contentStream.drawLine(margin,lineCordY,tableWidth,lineCordY);
+        contentStream.drawLine(leftMargin,lineCordY,tableWidth,lineCordY);
         lineCordY -= rowHeight;
       }
       //draw table vertical line
-      int lineCordX = margin;
-      lineCordY = margin + startLineY;
-      int endLineY = margin + startLineY - (tableRows * rowHeight);
+      int lineCordX = leftMargin;
+      lineCordY = downMargin + startLineY;
+      int endLineY = downMargin + startLineY - (tableRows * rowHeight);
       for (int i = 0; i <= cols; i++) {
         contentStream.drawLine(lineCordX,endLineY,lineCordX,lineCordY);
         if(i < cols)
@@ -83,8 +122,8 @@ public class OutputFileCreator {
       //now add the text
       contentStream.setFont(PDType1Font.HELVETICA_BOLD,6);
       //add title
-      int textx = margin;
-      int texty = margin + cellMargin + (maxRowsPerPage - 1) * rowHeight;    
+      int textx = leftMargin;
+      int texty = downMargin + cellMargin + (maxRowsPerPage - 1) * rowHeight;    
       for(String title : titles) {
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
@@ -93,7 +132,7 @@ public class OutputFileCreator {
         texty -= rowHeight;
       }
       //add header
-      textx = margin + cellMargin;
+      textx = leftMargin + cellMargin;
       texty -= rowHeight;
       for(ColumnHeader hdr : headers) {
         contentStream.beginText();
@@ -104,17 +143,17 @@ public class OutputFileCreator {
       }
       //add detail
       contentStream.setFont(PDType1Font.HELVETICA,5);
-      textx = margin + cellMargin;
+      textx = leftMargin + cellMargin;
       texty -= rowHeight;
       int idxHdr = 0;
       int maxRecord = num + tableRows - 1;
       for (int idxLkh = num; idxLkh < maxRecord; idxLkh++) {
         ListKpiHie lkh = content.get(idxLkh);
-        contentStream.beginText();
-        contentStream.moveTextPositionByAmount(textx,texty);
-        contentStream.drawString(++num + "");
-        contentStream.endText();
-        textx += headers.get(idxHdr++).getWidth() + cellMargin;
+        String suffix = lkh.getSatuan() == null || !lkh.getSatuan().equals("P") ? "" : "%"; //satuan, mis. %
+        String prefix = lkh.getSatuan() == null || !lkh.getSatuan().equals("A") ? "" : "Rp "; //simbol mata uang
+        String suffix1 = lkh.getAchieve() == null ? suffix : "%"; //satuan, mis. % di batas atas/bawah
+        String prefix1 = lkh.getAchieve() == null ? prefix : ""; //simbol mata uang di batas atas/bawah
+        num++;
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
         contentStream.drawString(lkh.getParent() + "");
@@ -128,7 +167,7 @@ public class OutputFileCreator {
         textx += headers.get(idxHdr++).getWidth() + cellMargin;
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
-        contentStream.drawString(lkh.getKpi());
+        contentStream.drawString(kpiBrkdwnFlag.equals("1") ? lkh.getId()+"" : lkh.getKpi());
         contentStream.endText();
         textx += headers.get(idxHdr++).getWidth() + cellMargin;
         contentStream.beginText();
@@ -138,30 +177,51 @@ public class OutputFileCreator {
         textx += headers.get(idxHdr++).getWidth() + cellMargin;
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
-        contentStream.drawString(lkh.getTarget() + "");
+        contentStream.drawString(lkh.getBatasAtas() == null ? "" : prefix1 + lkh.getBatasAtas() + suffix1);
         contentStream.endText();
         textx += headers.get(idxHdr++).getWidth() + cellMargin;
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
-        contentStream.drawString(lkh.getActual() + "");
+        contentStream.drawString(lkh.getBatasBawah() == null ? "" : prefix1 + lkh.getBatasBawah() + suffix1);
         contentStream.endText();
         textx += headers.get(idxHdr++).getWidth() + cellMargin;
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
-        contentStream.drawString(lkh.getLastMonth() + "");
+        contentStream.drawString(suffix.equals("") ? prefix : suffix);
         contentStream.endText();
         textx += headers.get(idxHdr++).getWidth() + cellMargin;
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
-        contentStream.drawString(lkh.getAchieve() + "");
+        contentStream.drawString(lkh.getTarget() == null ? "" : lkh.getTarget() + "");
         contentStream.endText();
         textx += headers.get(idxHdr++).getWidth() + cellMargin;
         contentStream.beginText();
         contentStream.moveTextPositionByAmount(textx,texty);
-        contentStream.drawString(lkh.getGrowth() + "");
+        contentStream.drawString(lkh.getSatuan() != null && lkh.getSatuan().equals("B") ? (lkh.getActual() == 1 ? "Sudah" : "Belum") :
+                (lkh.getActual() == null ? "" : lkh.getActual() + ""));
+        contentStream.endText();
+        textx += headers.get(idxHdr++).getWidth() + cellMargin;
+        contentStream.beginText();
+        contentStream.moveTextPositionByAmount(textx,texty);
+        contentStream.drawString(lkh.getLastMonth() == null ? "" : lkh.getLastMonth() + "");
+        contentStream.endText();
+        textx += headers.get(idxHdr++).getWidth() + cellMargin;
+        contentStream.beginText();
+        contentStream.moveTextPositionByAmount(textx,texty);
+        contentStream.drawString(lkh.getAchieve() == null ? "" : lkh.getAchieve() + "");
+        contentStream.endText();
+        textx += headers.get(idxHdr++).getWidth() + cellMargin;
+        contentStream.beginText();
+        contentStream.moveTextPositionByAmount(textx,texty);
+        contentStream.drawString(lkh.getGrowth() == null ? "" : lkh.getGrowth() + "");
+        contentStream.endText();
+        textx += headers.get(idxHdr++).getWidth() + cellMargin;
+        contentStream.beginText();
+        contentStream.moveTextPositionByAmount(textx,texty);
+        contentStream.drawString(lkh.getDatePopulate() == null ? "" : lkh.getDatePopulate());
         contentStream.endText();
         texty -= rowHeight;
-        textx = margin + cellMargin;
+        textx = leftMargin + cellMargin;
         idxHdr = 0;
       }
       contentStream.close();
@@ -169,16 +229,8 @@ public class OutputFileCreator {
     doc.save(file);
   } 
   
-  /**
-   * Excel file creator
-   * @param file
-   * @param titles
-   * @param headers
-   * @param content
-   * @throws IOException 
-   */
-  public void createExcel(File file, List<String> titles, List<ColumnHeader> headers, List<ListKpiHie> content)
-          throws IOException {
+  //Excel file creator
+  private void createExcel() throws IOException {
     //object preparation
     int rowIdx = 0;
     int cellIdx = 0;
@@ -206,30 +258,42 @@ public class OutputFileCreator {
       cell.setCellValue(header.getName());
     }
     // add detail
-    int num = 1;
     for (ListKpiHie lkh : content) {
       cellIdx = 0;
+      String suffix = lkh.getSatuan() == null || !lkh.getSatuan().equals("P") ? "" : "%"; //satuan, mis. %
+      String prefix = lkh.getSatuan() == null || !lkh.getSatuan().equals("A") ? "" : "Rp "; //simbol mata uang
+      String suffix1 = lkh.getAchieve() == null ? suffix : "%"; //satuan, mis. % di batas atas/bawah
+      String prefix1 = lkh.getAchieve() == null ? prefix : ""; //simbol mata uang di batas atas/bawah
       row = sheet.createRow(rowIdx++);
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(num++);
+      setCellValue(cell,lkh.getParent());
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getParent());
+      setCellValue(cell,lkh.getParentName());
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getParentName());
+      setCellValue(cell,kpiBrkdwnFlag.equals("1") ? lkh.getId()+"" : lkh.getKpi());
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getKpi());
+      setCellValue(cell,lkh.getName());
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getName());
+      setCellValue(cell,lkh.getBatasAtas() == null ? "" : prefix1+lkh.getBatasAtas()+suffix1);
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getTarget());
+      setCellValue(cell,lkh.getBatasBawah() == null ? "" : prefix1+lkh.getBatasBawah()+suffix1);
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getActual());
+      setCellValue(cell,suffix.equals("") ? prefix : suffix);
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getLastMonth());
+      setCellValue(cell,lkh.getTarget());
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getAchieve());
+      if(lkh.getSatuan() != null && lkh.getSatuan().equals("B"))
+        setCellValue(cell,lkh.getActual() == 1 ? "Sudah" : "Belum");
+      else
+        setCellValue(cell,lkh.getActual());
       cell = row.createCell(cellIdx++);
-      cell.setCellValue(lkh.getGrowth());
+      setCellValue(cell,lkh.getLastMonth());
+      cell = row.createCell(cellIdx++);
+      setCellValue(cell,lkh.getAchieve());
+      cell = row.createCell(cellIdx++);
+      setCellValue(cell,lkh.getGrowth());
+      cell = row.createCell(cellIdx++);
+      setCellValue(cell,lkh.getDatePopulate());
     }
     for(int colIdx = 1; colIdx < cellIdx; colIdx++)
       sheet.autoSizeColumn(colIdx);
@@ -239,16 +303,8 @@ public class OutputFileCreator {
     outFile.close();
   }
   
-  /**
-   * Text file creator
-   * @param file
-   * @param titles
-   * @param headers
-   * @param content
-   * @throws IOException 
-   */
-  public void createText(File file, List<String> titles, List<ColumnHeader> headers, List<ListKpiHie> content)
-          throws IOException {
+  //Text file creator
+  private void createText() throws IOException {
     //object preparation
     FileWriter fileWriter = new FileWriter(file);
     String newline = "\r\n";//return key and newline
@@ -261,46 +317,71 @@ public class OutputFileCreator {
     // add header
     fileWriter.append(delimiter);
     for(ColumnHeader header : headers) {
-      fileWriter.append(getStringWithSpace(header.getName(),header.getWidth()/3)).append(delimiter);
+      fileWriter.append(getStringWithSpace(header.getName(),header.getWidth()/3,"","")).append(delimiter);
     }
     fileWriter.append(newline);
     fileWriter.append(newline);
     // add detail
-    int num = 0;
     for (ListKpiHie lkh : content) {
       fileWriter.append(delimiter);
-      num++;
       int idxHdr = 0;
+      String suffix = lkh.getSatuan() == null || !lkh.getSatuan().equals("P") ? "" : "%"; //satuan, mis. %
+      String prefix = lkh.getSatuan() == null || !lkh.getSatuan().equals("A") ? "" : "Rp "; //simbol mata uang
+      String suffix1 = lkh.getAchieve() == null ? suffix : "%"; //satuan, mis. % di batas atas/bawah
+      String prefix1 = lkh.getAchieve() == null ? prefix : ""; //simbol mata uang di batas atas/bawah
       //add space if text length lower than column width
-      fileWriter.append(getStringWithSpace(num+"",headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getParent()+"",headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getParentName(),headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getKpi(),headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getName(),headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getTarget()+"",headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getActual()+"",headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getLastMonth()+"",headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getAchieve()+"",headers.get(idxHdr++).getWidth()/3)).append(delimiter);
-      fileWriter.append(getStringWithSpace(lkh.getGrowth()+"",headers.get(idxHdr++).getWidth()/3)).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getParent()+"",headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getParentName(),headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(kpiBrkdwnFlag.equals("1") ? lkh.getId()+"" : lkh.getKpi(),
+              headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getName(),headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getBatasAtas()+"",headers.get(idxHdr++).getWidth()/3,suffix1,prefix1)).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getBatasBawah()+"",headers.get(idxHdr++).getWidth()/3,suffix1,prefix1)).append(delimiter);
+      fileWriter.append(getStringWithSpace(suffix.equals("") ? prefix : suffix,headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getTarget()+"",headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getSatuan() != null && lkh.getSatuan().equals("B") ? (lkh.getActual() == 1 ? "Sudah" : "Belum") :
+              lkh.getActual()+"",headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getLastMonth()+"",headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getAchieve()+"",headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getGrowth()+"",headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
+      fileWriter.append(getStringWithSpace(lkh.getDatePopulate(),headers.get(idxHdr++).getWidth()/3,"","")).append(delimiter);
       fileWriter.append(newline);
     }
     fileWriter.close();
   }
   
   //text with space to equal column width
-  private String getStringWithSpace(String str, int length) {
-    if(str == null)
-      return null;
+  private String getStringWithSpace(String str, int length, String suffix, String prefix) {
+    if(str == null || str.equals("null")) {
+      str = "";
+      suffix = "";
+      prefix = "";
+    }
+    str = prefix + str + suffix;
     //cut text if it is too long (more than 40)
     if(str.length() > 40)
       str = str.substring(0,40);
     if(str.length() > length)
       str = str.substring(0,length);
     int spaceLen = length - str.length();
-    String space = " ";
     StringBuilder sb = new StringBuilder(str);
+    String space = " ";
     for(int idxSpace = 0; idxSpace < spaceLen; idxSpace++)
       sb.append(space);
     return sb.toString();
+  }
+  
+  //set excel cell value include null value and unit
+  private void setCellValue(Cell cell, String value) {
+    if(value != null)
+      cell.setCellValue(value);
+  }
+  private void setCellValue(Cell cell, Double value) {
+    if(value != null)
+      cell.setCellValue(value);
+  }
+  private void setCellValue(Cell cell, Integer value) {
+    if(value != null)
+      cell.setCellValue(value);
   }
 }

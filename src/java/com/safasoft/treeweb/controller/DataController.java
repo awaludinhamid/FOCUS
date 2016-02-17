@@ -11,6 +11,7 @@ import com.safasoft.treeweb.bean.MstDts;
 import com.safasoft.treeweb.bean.support.TableContent;
 import com.safasoft.treeweb.bean.UserAccess;
 import com.safasoft.treeweb.bean.support.ColumnHeader;
+import com.safasoft.treeweb.bean.support.ListBean;
 import com.safasoft.treeweb.bean.support.TableValue;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import com.safasoft.treeweb.service.MstDtsService;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -97,10 +99,13 @@ public class DataController {
        MstDtsService mdServ =
                 new SessionUtil<MstDtsService>().getAppContext("mstDtsService");
        MstDts mstDts = mdServ.getByCode(tmpArr[1]);
+       String layerSuffixTable = "";//"_"+tmpArr[2].toUpperCase();
        if(tmpArr.length == 7) {
-         knList = usersServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],mstDts.getDtsTable(),mstDts.getDtsTableLastMonth());
+         knList = usersServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],
+                 mstDts.getDtsTable()+layerSuffixTable,mstDts.getDtsTableLastMonth()+layerSuffixTable);
        } else {
-         knList = usersServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],tmpArr[6],mstDts.getDtsTable(),mstDts.getDtsTableLastMonth());
+         knList = usersServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],tmpArr[6],
+                 mstDts.getDtsTable()+layerSuffixTable,mstDts.getDtsTableLastMonth()+layerSuffixTable);
        }
        for(ListKpi kn : knList) {
         ListKpiHie lkth = new ListKpiHie();
@@ -113,15 +118,21 @@ public class DataController {
         lkth.setKpiType(kn.getKpiType());
         lkth.setName(kn.getName());
         lkth.setUrl(kn.getUrl());
+        lkth.setTypeKpi(kn.getTypeKpi());
+        lkth.setSatuan(kn.getSatuan());
         lkth.setTarget(kn.getTarget());
         lkth.setActual(kn.getActual());
         lkth.setAchieve(kn.getAchieve());
         lkth.setLastMonth(kn.getLastMonth());
         lkth.setGrowth(kn.getGrowth());
+        lkth.setBatasAtas(kn.getBatasAtas());
+        lkth.setBatasBawah(kn.getBatasBawah());
         lkth.setColor(kn.getColor());
         lkth.setDept(kn.getDept());
         lkth.setButton(kn.getButton());
         lkth.setIcon(kn.getIcon());
+        lkth.setDatePopulate(kn.getDatePopulate());
+        lkth.setSystemId(kn.getSystemId());
         List<Integer> listJsonDel = new ArrayList<Integer>();
         List<ListKpiHie> jsonArray = new ArrayList<ListKpiHie>();
         for(int idxJson = 0; idxJson < listJson.size(); idxJson++) {
@@ -142,11 +153,11 @@ public class DataController {
         listJson.add(lkth);
        }
     } catch(Exception x) {
-      logger.debug(x);
+      logger.error(x);
     }
-     //only last element would be returned
-     listJsonKpi = listJson.get(listJson.size()-1);
-     return listJsonKpi;
+    //only last element would be returned
+    listJsonKpi = listJson.get(listJson.size()-1);
+    return listJsonKpi;
   }
 
  /**
@@ -171,6 +182,7 @@ public class DataController {
   */
   @RequestMapping(value = "/useraccess", method = RequestMethod.GET)
   public @ResponseBody List<UserAccess> getUserAccessList() {
+     logger.debug("Received request to get user access");
     //retrieve data
     return new SessionUtil<UserAccessService>().getAppContext("userAccessService").getAll();
   }
@@ -183,6 +195,7 @@ public class DataController {
   */
   @RequestMapping(value = "/table", method = RequestMethod.GET)
   public @ResponseBody TableContent getTableContentByPage(HttpServletRequest httpRequest) {
+    logger.debug("Received request to get table content");
     //grab current table and page no
     String tableName = httpRequest.getParameter("tableName");
     int pageNo = Integer.parseInt(httpRequest.getParameter("pageNo"));
@@ -198,12 +211,18 @@ public class DataController {
   */
   @RequestMapping(value = "/table/value", method = RequestMethod.GET)
   public @ResponseBody List<TableValue> getTableValue(HttpServletRequest httpRequest) {
+    logger.debug("Received request to get table value");
     //grab table, columns, and order by clause
     String tableName = httpRequest.getParameter("tableName");
     String columnsSerialExt = httpRequest.getParameter("columnsSerialExt");
     String orderByColumn = httpRequest.getParameter("orderByColumn");
+    String searchText = httpRequest.getParameter("searchText");
+    int currPageNoFind = Integer.parseInt(httpRequest.getParameter("currPageNoFind"));
     //retrieve value
-    return new SessionUtil<UsersService>().getAppContext("usersService").getListTableValue(tableName,columnsSerialExt,orderByColumn);
+    if(searchText != null && !searchText.equals(""))
+      return new SessionUtil<UsersService>().getAppContext("usersService")
+              .getListTableValue(tableName,columnsSerialExt,orderByColumn,searchText,currPageNoFind);
+    return new SessionUtil<UsersService>().getAppContext("usersService").getListTableValue(tableName,columnsSerialExt,orderByColumn,currPageNoFind);
   }
 
   /**
@@ -214,6 +233,7 @@ public class DataController {
   */
   @RequestMapping(value = "/table/pageno", method = RequestMethod.GET)
   public @ResponseBody Integer getPageNo(HttpServletRequest httpRequest) {
+    logger.debug("Received request to get page no");
     //grab table, columns, order by clause, and record id
     String tableName = httpRequest.getParameter("tableName");
     String columnsSerialExt = httpRequest.getParameter("columnsSerialExt");
@@ -230,6 +250,7 @@ public class DataController {
   */
   @RequestMapping(value = "/table/save", method = RequestMethod.POST)
   public String saveTable(HttpServletRequest httpRequest) {
+    logger.debug("Received request to commit sql statement into database");
     //grab statement
     String sql = httpRequest.getParameter("sql");
     //execute
@@ -245,6 +266,7 @@ public class DataController {
   */
   @RequestMapping(value = "/upload", method = RequestMethod.POST)
   public String upload(HttpServletRequest httpRequest) {
+    logger.debug("Received request to upload file");
     //grab table and columns
     String tableName = httpRequest.getParameter("tableName");
     String columnsSerial = httpRequest.getParameter("columnsSerial");
@@ -256,26 +278,28 @@ public class DataController {
     //convert excel object into SQL statement
     Sheet sheet = wb.getSheetAt(0);
     for(Row row : sheet) {
-      StringBuilder sb = new StringBuilder("INSERT INTO " + tableName + " ("+columnsSerial+") VALUES (");
-      for(Cell cell : row) {
-        switch(cell.getCellType()) {
-          case Cell.CELL_TYPE_STRING:
-              dc.setConverter(cell.getRichStringCellValue().getString(),"'");
-              break;
-          case Cell.CELL_TYPE_NUMERIC:
-              if(DateUtil.isCellDateFormatted(cell)) {
-                  dc.setConverter(cell.getDateCellValue(),"yyyy-MM-dd","'");
-              } else {
-                  dc.setConverter(cell.getNumericCellValue(),"#0.############");
-              }
-              break;
-          default:
-              dc.setConverter("");
+      if(row != null) {
+        StringBuilder sb = new StringBuilder("INSERT INTO " + tableName + " ("+columnsSerial+") VALUES (");
+        for(Cell cell : row) {
+          switch(cell.getCellType()) {
+            case Cell.CELL_TYPE_STRING:
+                dc.setConverter(cell.getRichStringCellValue().getString(),"'");
+                break;
+            case Cell.CELL_TYPE_NUMERIC:
+                if(DateUtil.isCellDateFormatted(cell)) {
+                    dc.setConverter(cell.getDateCellValue(),"yyyy-MM-dd","'");
+                } else {
+                    dc.setConverter(cell.getNumericCellValue(),"#0.############");
+                }
+                break;
+            default:
+                dc.setConverter("");
+          }
+          sb.append(dc.getConverter()).append(",");
         }
-        sb.append(dc.getConverter()).append(",");
+        //save data
+        usersServ.saveTable(sb.substring(0,sb.lastIndexOf(",")) + ")");
       }
-      //save data
-      usersServ.saveTable(sb.substring(0,sb.lastIndexOf(",")) + ")");
     }
     return "uploadpage";
   }
@@ -285,11 +309,13 @@ public class DataController {
   *
   * @param file
   * @param fileType
+  * @param isHeader
   * @return json data
   */
   @RequestMapping(value = "/upload/current", method = RequestMethod.POST)
   public @ResponseBody Map<String,Object> getUploadCurrent(
-          @RequestParam("file") MultipartFile file, @RequestParam("fileType") String fileType) {
+          @RequestParam("file") MultipartFile file, @RequestParam("fileType") String fileType, @RequestParam("isHeader") boolean isHeader) {
+    logger.debug("Received request to save uploaded file");
     Map<String,Object> contents = new HashMap<String,Object>();//return store
     //read excel file and store them into object
     //remember to add column header
@@ -300,31 +326,36 @@ public class DataController {
         wb = new HSSFWorkbook(file.getInputStream());//.xls
       else
         wb = new XSSFWorkbook(file.getInputStream());//.xlsx
+      //file has header
+      if(isHeader)
+        wb.getSheetAt(0).removeRow(wb.getSheetAt(0).getRow(0));
       Sheet sheet = wb.getSheetAt(0);
       DataConverter dc = new DataConverter();
-      int numOfColumn = sheet.getRow(0).getLastCellNum();
+      int numOfColumn = sheet.getRow(sheet.getLastRowNum()).getLastCellNum();
       for(int idxCol = 1; idxCol <= numOfColumn; idxCol++)
         headers.add("COL"+idxCol);
       for(Row row : sheet) {
-        Map<String,String> value = new HashMap<String,String>();
-        for(Cell cell : row) {
-           switch(cell.getCellType()) {
-             case Cell.CELL_TYPE_STRING:
-                 dc.setConverter(cell.getRichStringCellValue().getString());
-                 break;
-             case Cell.CELL_TYPE_NUMERIC:
-                 if(DateUtil.isCellDateFormatted(cell)) {
-                     dc.setConverter(cell.getDateCellValue(),"dd-MMM-yy");
-                 } else {
-                     dc.setConverter(cell.getNumericCellValue(),"#0.############");
-                 }
-                 break;
-             default:
-                 dc.setConverter("");
-           }
-          value.put("col"+(cell.getColumnIndex()+1),dc.getConverter());
+        if(row != null) {
+          Map<String,String> value = new HashMap<String,String>();
+          for(Cell cell : row) {
+             switch(cell.getCellType()) {
+               case Cell.CELL_TYPE_STRING:
+                   dc.setConverter(cell.getRichStringCellValue().getString());
+                   break;
+               case Cell.CELL_TYPE_NUMERIC:
+                   if(DateUtil.isCellDateFormatted(cell)) {
+                       dc.setConverter(cell.getDateCellValue(),"dd-MMM-yy");
+                   } else {
+                       dc.setConverter(cell.getNumericCellValue(),"#0.############");
+                   }
+                   break;
+               default:
+                   dc.setConverter("");
+             }
+            value.put("col"+(cell.getColumnIndex()+1),dc.getConverter());
+          }
+          values.add(value);
         }
-        values.add(value);
       }
       contents.put("headers", headers);
       contents.put("values", values);
@@ -341,11 +372,12 @@ public class DataController {
   * @return json data
   */
   @RequestMapping(value = "/upload/access", method = RequestMethod.GET)
-  public @ResponseBody String getUploadTableAccess(HttpServletRequest httpRequest) {
+  public @ResponseBody List<ListBean> getUploadTableAccess(HttpServletRequest httpRequest) {
+    logger.debug("Received request to get uploaded file access");
     //grab table
-    String tableName = httpRequest.getParameter("tableName");
+    String uid = httpRequest.getParameter("uid");
     //retrieve privilege
-    return new SessionUtil<UsersService>().getAppContext("usersService").getUploadTableAccess(tableName);
+    return new SessionUtil<UsersService>().getAppContext("usersService").getListUploadTableByUser(uid);
   }
 
  /**
@@ -356,6 +388,7 @@ public class DataController {
   */
   @RequestMapping(value = "/refresh", method = RequestMethod.POST)
   public String refreshPage(HttpServletRequest httpRequest) {
+    logger.debug("Received request to delete json created file on server");
     //grab directory path
     File dir = new File(httpRequest.getSession().getServletContext()
              .getRealPath("/json"));
@@ -373,6 +406,7 @@ public class DataController {
    */
   @RequestMapping(value = "/download/request", method = RequestMethod.POST)
   public void requestDownload(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+    logger.debug("Received request to create downloadable file");
     //grab current view (0=KPI view, 1=breakdown view)
     String kpiBrkdwnFlag = httpRequest.getParameter("kpiBrkdwnFlag");
     //title setup
@@ -385,10 +419,11 @@ public class DataController {
     titles.add("Business Unit: " + httpRequest.getParameter("lobName"));
     titles.add("Level: " + httpRequest.getParameter("membersName"));
     if(kpiBrkdwnFlag.equals("1"))
-      titles.add("KPI: " + httpRequest.getParameter("kpiName"));
+      titles.add(httpRequest.getParameter("kpiName"));
     //header setup
-    String[] nameArr = {"No","Parent Id","Parent Name","KPI ID","Description","Target","Actual","Last Month","Achieve(%)","Growth(%)"};
-    int[] widthArr = {16,30,133,24,133,48,48,48,48,48};
+    String[] nameArr = {"Parent Id","Parent Description","Id","Description","Batas Atas","Batas Bawah",
+      "Satuan","Target","Actual","Last Month","Achieve(%)","Growth(%)","Populate"};
+    int[] widthArr = {30,133,24,133,48,48,24,48,48,48,48,48,60};
     List<ColumnHeader> colsHdr = new ArrayList<ColumnHeader>();
     for(int idxArr = 0; idxArr < nameArr.length; idxArr++) {
       ColumnHeader colHdr = new ColumnHeader();
@@ -403,31 +438,18 @@ public class DataController {
     String fileExt = httpRequest.getParameter("extType");
     jsonName = jsonName.substring(0,jsonName.lastIndexOf("_")+1)+strDate+"."+fileExt;
     //prepare dowloadable file
-    //retrieve current KPI data and store them into object with spesific chosen file type (excel,pdf or text)
+    //retrieve current KPI data and store them into object with spesific chosen file type (excel, pdf or text)
+    //do not forget to order the object content
     fileDownload = new File(jsonName);
     List<ListKpiHie> listKpiTemp = new ArrayList<ListKpiHie>();    
     transformObjectToList(listKpiTemp,listJsonKpi,kpiBrkdwnFlag);
-    OutputFileCreator ofc = new OutputFileCreator();
-    if(fileExt.equals("xlsx")) {
-      try {
-        ofc.createExcel(fileDownload, titles, colsHdr, listKpiTemp);
-      } catch(IOException iox) {
-        logger.error(iox);
-      }
-    } else if(fileExt.equals("pdf")) {
-      try {
-        ofc.createPDF(fileDownload, titles, colsHdr, listKpiTemp);
-      } catch(IOException iox) {
-        logger.error(iox);
-      } catch(COSVisitorException cox) {
-        logger.error(cox);
-      }
-    } else if(fileExt.equals("txt")) {
-      try {
-        ofc.createText(fileDownload, titles, colsHdr, listKpiTemp);
-      } catch(IOException iox) {
-        logger.error(iox);
-      }
+    Collections.sort(listKpiTemp);
+    try {
+      new OutputFileCreator(fileDownload,titles,colsHdr,listKpiTemp,fileExt,kpiBrkdwnFlag).createFile();
+    } catch(IOException iox) {
+      logger.error(iox);
+    } catch(COSVisitorException cox) {
+      logger.error(cox);
     }
   }
 
@@ -436,7 +458,8 @@ public class DataController {
    * @param httpResponse 
    */
   @RequestMapping(value = "/download", method = RequestMethod.GET)
-  public void testDownload(HttpServletResponse httpResponse) {
+  public void download(HttpServletResponse httpResponse) {
+    logger.debug("Received request to download file");
     //read data and rewrite it into downloadable file
     try {
       httpResponse.setHeader("Content-disposition","attachment; filename="+jsonName);
@@ -446,6 +469,12 @@ public class DataController {
     } catch (IOException ex) {
      logger.error(ex);
     }
+  }
+  
+  @RequestMapping(value = "/currentsession", method = RequestMethod.GET)
+  public @ResponseBody String getCurrentSession(HttpServletRequest httpRequest) {
+    logger.debug("Received request to get current session");
+    return httpRequest.getSession().getId();
   }
 
  /**
@@ -538,12 +567,17 @@ public class DataController {
       ListKpiHie lkh = new ListKpiHie();
       lkh.setAchieve(listKpiHie.getAchieve());
       lkh.setActual(listKpiHie.getActual());
+      lkh.setBatasAtas(listKpiHie.getBatasAtas());
+      lkh.setBatasBawah(listKpiHie.getBatasBawah());
+      lkh.setDatePopulate(listKpiHie.getDatePopulate());
       lkh.setGrowth(listKpiHie.getGrowth());
+      lkh.setId(listKpiHie.getId());
       lkh.setKpi(listKpiHie.getKpi());
       lkh.setLastMonth(listKpiHie.getLastMonth());
       lkh.setName(listKpiHie.getName());
       lkh.setParent(listKpiHie.getParent());
       lkh.setParentName(listKpiHie.getParentName());
+      lkh.setSatuan(listKpiHie.getSatuan());
       lkh.setTarget(listKpiHie.getTarget());
       listsKpiHie.add(lkh);
     }
@@ -561,5 +595,9 @@ public class DataController {
     model.addObject("exception", exception);
     return model;
   }*/
+
+  Map<String, Object> getUploadCurrent(MultipartFile file, String fileType) {
+    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+  }
 
 }

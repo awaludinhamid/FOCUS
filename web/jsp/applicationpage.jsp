@@ -16,9 +16,7 @@
   </head>
   <body>
     <div id="kpi" class="app-def-position" hidden>
-      <ul class="list-unstyled">
-        <li><span id="spanKpi"></span></li>
-        <li><span id="spanKpiDet"></span></li>
+      <ul class="list-unstyled">        
       </ul>
     </div>
     <div class="app-def-position">
@@ -33,6 +31,7 @@
       <button id="btn-slider">|</button>
       <button id="btn-zoom-out" class="glyphicon glyphicon-plus" title="Zoom Out"></button>
       <button id="btn-expand-collapse" class="glyphicon glyphicon-resize-small" title="Collapse All"></button>
+      <button id="btn-back" class="glyphicon glyphicon-triangle-left">&nbsp;Back</button>
     </div>
     <div id="map">
       <div id="mapClose">

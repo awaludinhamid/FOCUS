@@ -53,4 +53,5 @@ public class ListBean implements Serializable {
   public void setName(String name) {
     this.name = name;
   }
+  
 }

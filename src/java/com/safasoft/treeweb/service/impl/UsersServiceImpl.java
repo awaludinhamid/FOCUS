@@ -8,6 +8,7 @@ package com.safasoft.treeweb.service.impl;
 import com.safasoft.treeweb.bean.support.ListKpi;
 import com.safasoft.treeweb.bean.support.TableContent;
 import com.safasoft.treeweb.bean.Users;
+import com.safasoft.treeweb.bean.support.ListBean;
 import com.safasoft.treeweb.bean.support.TableValue;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import com.safasoft.treeweb.dao.UsersDAO;
@@ -68,8 +69,8 @@ public class UsersServiceImpl implements UsersService {
   }
 
   @Override
-  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn) {
-    return usersDAO.getListTableValue(tableName, columnsSerialExt, orderByColumn);
+  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn, int currPageNoFind) {
+    return usersDAO.getListTableValue(tableName, columnsSerialExt, orderByColumn, currPageNoFind);
   }
 
   @Override
@@ -78,7 +79,12 @@ public class UsersServiceImpl implements UsersService {
   }
 
   @Override
-  public String getUploadTableAccess(String tableName) {
-    return usersDAO.getUploadTableAccess(tableName);
+  public List<ListBean> getListUploadTableByUser(String userAccess) {
+    return usersDAO.getListUploadTableByUser(userAccess);
+  }
+
+  @Override
+  public List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn, String searchText, int currPageNoFind) {
+    return usersDAO.getListTableValue(tableName, columnsSerialExt, orderByColumn, searchText, currPageNoFind);
   }
 }

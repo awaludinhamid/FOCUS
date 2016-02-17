@@ -4,7 +4,8 @@
  */
 
 $(document).ready(function(){
-  
+    loadingStateChange("show");
+    
     /* VARIABLE DECLARATION */
     //
     var m = [100, 80, 100, 80], //svg padding to tree(up,left,down,right)
@@ -13,25 +14,27 @@ $(document).ready(function(){
         w = 0, //tree diagram width
         h = 0, //tree diagram height
         cnt = 0; //node count
-    var root, tree, diagonal, vis, tooltip, linktip, linGradRed, linGradGreen, linGradYellow, linGradCyan, linGradGrey, radGrad; //tree var holder
+    var root, tree, diagonal, vis, tooltip, linktip, linGradRed, linGradGreen, linGradYellow, linGradBlue, linGradGrey, linGradPurple, radGrad; //tree var holder
     var rCircle = 15; //circle node radiant
     var lLine = 320; //hierarchy line length
     var linkTree = "";	//json file name
     var hoverFlag = 0;//avoid hover on click
     var delimiter = "_";//kpi param value separator
-    var kpiDefTopPos = $(".app-def-position").css("top");//default top position of apps
+    var kpiDefTopPos = $(".app-def-position").css("top"), //default top position of apps
+        kpiOptLastTopPos; //last top position of kpi option div
     //	
     var kpiBrkdwnFlag = 0, //0=by kpi 1=by area
-        kpiDetFlag; //0=level sebelum child terakhir 1=level child terakhir
+        kpiDetFlag, //0=level sebelum child terakhir 1=level child terakhir
+        memberShowFlag = 0; //0=current option show is not member 1=current option show is member
     //
     var arrFlag = [], //switch flagging, for hide/unhide item
         arrLayer = [], //parent-child collection, for hide/unhide child of parent
         arrVal = [{name: "dept",value:""},  // current option selected
                   {name: "members",value:""},
                   {name: "kpiCode",value:""},
-                  {name: "dts",value:"D"},
-                  {name: "coy",value:"01"},
-                  {name: "lob",value:"nmc"},
+                  {name: "dts",value:""},
+                  {name: "coy",value:""},
+                  {name: "lob",value:""},
                   {name: "initMembers",value:""}];
     //
     var arrZoomPoint = [{left:"0px",scale:0.4},
@@ -48,162 +51,131 @@ $(document).ready(function(){
 
     /* MEMBER & DEPARTMENT GENERATE */
     //load user detail json data
-    $.get("/FOCUS/apps/data/profile",function(data,status) {
-      if(status == "success") {
-        var deptTemp = ""; //dept/layer comparison while looping list
-        //set current and initial (used when started new dept/layer) member/level
-        setValue("members",data[0].memberListCode);
-        setValue("initMembers",data[0].memberListCode);
-        //labelling current user layer
-        $("div#right-title span").html("<span class='"+glyTags+"'></span>&nbsp;&nbsp;Layer: "+
-                data[0].memberName+(data[0].memberListCode == "00000" ? "" : " "+data[0].memberListName));
-        //flag to switch data [un]loading and flag to switch detail[breakdown] view
-        arrFlag.push({code: "dept", flag: 0, detFlag: 0});
-        //append/labelling/styling distinct dept/layer, show first item only and set current dept/layer
-        $("#kpiSelect").append(
-          "<ul id='dept' class='list-unstyled' title='Department'>"+
-            "<li id='selectdept' hidden><span id='spanselectdept'>&nbsp;&nbsp;Department</span></li>"+
-          "</ul>");
-        $("#spanselectdept")
-            .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
-        for(i = 0; i < data.length; i++) {
-          if(data[i].deptCode != deptTemp) {
-            deptTemp = data[i].deptCode;
-            if(i == 0) {
-              createList("dept",deptTemp,data[i].deptName,true);
-              setValue("dept",deptTemp);
+    var execFunc = function() {
+      $.get("../../apps/data/profile",function(data,status) {
+        if(status === "success") {
+          //identify user authorization has been set
+          if(data.length === 0) {
+            $("#mdl-common #myModalLabel").html("<h3><span style='color: yellow' class='glyphicon glyphicon-exclamation-sign'>&nbsp;Warning</span></h3>");
+            $("#mdl-common #content").text("Layer authorization must be set first");
+            $("#mdl-common").modal("show"); 
+            $(".app-def-position, #zoom-slider, #userMenu ul li:not('#idLogout,#idHome')").hide();
+            return false;       
+          }
+          var deptTemp = ""; //dept/layer comparison while looping list
+          //set current and initial (used when started new dept/layer) member/level
+          setValue("members",data[0].memberListCode);
+          setValue("initMembers",data[0].memberListCode);
+          //labelling current user layer
+          $("div#right-title span").html("<span class='"+glyTags+"'></span>&nbsp;&nbsp;Layer: "+
+                  data[0].memberName+(data[0].memberListCode === "00000" ? "" : " "+data[0].memberListName));
+          //flag to switch data [un]loading and flag to switch detail[breakdown] view
+          arrFlag.push({code: "dept", flag: 0, detFlag: 0});
+          //append/labelling/styling distinct dept/layer, show first item only and set current dept/layer
+          $("#kpiSelect").append(
+            "<ul id='dept' class='list-unstyled' title='Department'>"+
+              "<li id='selectdept' hidden><span id='spanselectdept'>&nbsp;&nbsp;Department</span></li>"+
+            "</ul>");
+          $("#spanselectdept")
+              .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
+          for(var idx = 0; idx < data.length; idx++) {
+            if(data[idx].deptCode !== deptTemp) {
+              deptTemp = data[idx].deptCode;
+              if(idx === 0) {
+                createList("dept",deptTemp,data[idx].deptName,true);
+                setValue("dept",deptTemp);
+              } else {
+                createList("dept",deptTemp,data[idx].deptName,false);
+              }
+            }
+          }
+          deptTemp = "";
+          //generate member/level
+          for(var idx = 0; idx < data.length; idx++) {
+            //hide root member/level
+            if(data[idx].memberCode.replace(data[idx].deptCode+"-","") != data[idx].parentMemberCode) {
+              //flag to switch data [un]loading and flag to switch detail[breakdown] view
+              arrFlag.push({code: data[idx].memberCode, flag: 0, detFlag: 0});
+              //last member/level on list only view detail
+              if(idx == data.length - 1) {
+                setDetFlag(data[idx].memberCode,1);
+              }else if(data[idx].deptCode != data[idx+1].deptCode) {
+                setDetFlag(data[idx].memberCode,1);
+              }
+              //add parent-child member/level collection
+              arrLayer.push({code: data[idx].memberCode, parent: data[idx].deptCode});
+              //each high level member have children at all lower levels and must be member/level at same group
+              for(var idx1 = idx - 1; idx1 > 0; idx1--) {
+                if(data[idx].parentMemberCode == data[idx1].parentMemberCode && data[idx].deptCode == data[idx1].deptCode) {
+                  arrLayer.push({code: data[idx].memberCode, parent: data[idx1].memberCode});
+                }
+              }
+              //append member/level to the tags list, only first member/level should be display
+              //each member has label, all list option (if necessery) and styling
+              $("#kpiMember").append(
+                "<ul id='"+data[idx].memberCode+"' class='list-unstyled' title='"+data[idx].memberName+"'"+(idx == 1 ? "" : " style='display: none'")+">"+
+                  "<li id='select"+data[idx].memberCode+"' hidden><span id='spanselect"+data[idx].memberCode+"'>&nbsp;&nbsp;"+data[idx].memberName+"</span></li>"+
+                  "<li id='all"+data[idx].memberCode+"'"+(data[idx].deptCode == deptTemp ? "" : " data-id='"+getValue("members")+"'")+
+                    "><span id='spanall"+data[idx].memberCode+"'>&nbsp;&nbsp;"+breakLongText("All "+data[idx].memberName)+"</span></li>"+
+                "</ul>");
+              $("#spanselect"+data[idx].memberCode)
+                  .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
+              $("#spanall"+data[idx].memberCode)
+                  .attr("class",pickStyle).css("text-align","left");//.css("background-color",bkColPick);
+              //generate list option of member/level, execution is only one per dept/layer
+              if(data[idx].deptCode != deptTemp) {
+                var firstMemberCode = data[idx].memberCode;
+                var memberList = window["list_"+firstMemberCode.replace(data[idx].deptCode+"-","")+"_"+data[idx].parentMemberCode+"_"+getValue("members")];
+                for(var idx1 = 0; idx1 < memberList.length; idx1++) {
+                        createList(firstMemberCode,memberList[idx1].code,memberList[idx1].name,false);
+                }
+                deptTemp = data[idx].deptCode;
+              }
+              kpiDetFlag = 0;
             } else {
-              createList("dept",deptTemp,data[i].deptName,false);
+              kpiDetFlag = 1;
             }
           }
+          //generate option
+          generateOption();
+          //show data tree
+          showJson();
+        } else {
+          modalCommonShow(3,"Loading profile json unsuccessfully: status = " + status);
         }
-        deptTemp = "";
-        //generate member/level
-        for(i = 0; i < data.length; i++) {
-          //hide root member/level
-          if(data[i].memberCode.replace(data[i].deptCode+"-","") != data[i].parentMemberCode) {
-            //flag to switch data [un]loading and flag to switch detail[breakdown] view
-            arrFlag.push({code: data[i].memberCode, flag: 0, detFlag: 0});
-            //last member/level on list only view detail
-            if(i == data.length - 1) {
-              setDetFlag(data[i].memberCode,1);
-            }else if(data[i].deptCode != data[i+1].deptCode) {
-              setDetFlag(data[i].memberCode,1);
-            }
-            //add parent-child member/level collection
-            arrLayer.push({code: data[i].memberCode, parent: data[i].deptCode});
-            //each high level member have children at all lower levels and must be member/level at same group
-            for(j = i - 1; j > 0; j--) {
-              if(data[i].parentMemberCode == data[j].parentMemberCode && data[i].deptCode == data[j].deptCode) {
-                arrLayer.push({code: data[i].memberCode, parent: data[j].memberCode});
-              }
-            }
-            //append member/level to the tags list, only first member/level should be display
-            //each member has label, all list option (if necessery) and styling
-            $("#kpiMember").append(
-              "<ul id='"+data[i].memberCode+"' class='list-unstyled' title='"+data[i].memberName+"'"+(i == 1 ? "" : " style='display: none'")+">"+
-                "<li id='select"+data[i].memberCode+"' hidden><span id='spanselect"+data[i].memberCode+"'>&nbsp;&nbsp;"+data[i].memberName+"</span></li>"+
-                "<li id='all"+data[i].memberCode+"'"+(data[i].deptCode == deptTemp ? "" : " data-id='"+getValue("members")+"'")+"><span id='spanall"+data[i].memberCode+"'>&nbsp;&nbsp;All&nbsp;"+data[i].memberName+"</span></li>"+
-              "</ul>");
-            $("#spanselect"+data[i].memberCode)
-                .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
-            $("#spanall"+data[i].memberCode)
-                .attr("class",pickStyle).css("text-align","left");//.css("background-color",bkColPick);
-            //generate list option of member/level, execution is only one per dept/layer
-            if(data[i].deptCode != deptTemp) {
-              var firstMemberCode = data[i].memberCode;
-              var memberList = window["list_"+firstMemberCode.replace(data[i].deptCode+"-","")+"_"+data[i].parentMemberCode+"_"+getValue("members")];
-              for(k = 0; k < memberList.length; k++) {
-                      createList(firstMemberCode,memberList[k].code,memberList[k].name,false);
-              }
-              deptTemp = data[i].deptCode;
-            }
-            kpiDetFlag = 0;
+      }).fail(function(d) {
+        modalCommonShow(2,"Failed to load profile json: ", d);
+      }).error(function(d) {
+        modalCommonShow(1,"Error loading profile json: ", d);
+      });
+    };
+    checkCurrSessAndExec(execFunc);
+    /* *** */
+
+    /* OPTION GENERATE */
+    function generateOption() {
+      //append/labelling/styling distinct option
+      for(var idx = 0; idx < list_option.length; idx++) {
+        $("#kpiSelect").append(
+          "<ul id='"+list_option[idx].code+"' class='list-unstyled' title='"+list_option[idx].name+"'>"+
+            "<li id='select"+list_option[idx].code+"' hidden><span id='spanselect"+list_option[idx].code+
+              "'>&nbsp;&nbsp;"+list_option[idx].name+"</span></li>"+
+          "</ul>");
+        $("#spanselect"+list_option[idx].code)
+            .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
+        //var optionList generated by other process, got from js/ folder, show first item only
+        var optionList = window["list_"+list_option[idx].code];
+        for(var idx1 = 0; idx1 < optionList.length; idx1++) {
+          if(idx1 === 0) {
+            setValue(list_option[idx].code,optionList[idx1].code);
+            createList(list_option[idx].code,optionList[idx1].code,optionList[idx1].name,true);
           } else {
-            kpiDetFlag = 1;
+            createList(list_option[idx].code,optionList[idx1].code,optionList[idx1].name,false);
           }
         }
-        //genrate data time series
-        generateDts();
-        //generate company
-        generateCoy();
-        //generate product
-        generateLob();
-        //show data tree
-        showJson();
-      } else {
-        modalCommonShow(3,"Loading profile json unsuccessfully: status = " + status);
+        //flag to switch data [un]loading
+        arrFlag.push({code: list_option[idx].code, flag: 0});
       }
-    }).fail(function(d) {
-      modalCommonShow(2,"Failed to load profile json: ", d);
-    }).error(function(d) {
-      modalCommonShow(1,"Error loading profile json: ", d);
-    });
-    //label styling
-    $("#kpi span")
-      .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
-    /* *** */
-
-    /* DATA TIME SERIES GENERATE */
-    function generateDts() {
-      //append/labelling/styling distinct data time series
-      $("#kpiSelect").append(
-        "<ul id='dts' class='list-unstyled' title='Data Time Series'>"+
-          "<li id='selectdts' hidden><span id='spanselectdts'>&nbsp;&nbsp;Data Time Series</span></li>"+
-        "</ul>");
-      $("#spanselectdts")
-          .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
-      //var list_dts generated by other process, got from js/ folder, show first item only
-      for(i = 0; i < list_dts.length; i++) {
-        if(i == 0)
-          createList("dts",list_dts[i].code,list_dts[i].name,true);
-        else
-          createList("dts",list_dts[i].code,list_dts[i].name,false);
-      }
-      //flag to switch data [un]loading
-      arrFlag.push({code: "dts", flag: 0});
-    }
-    /* *** */
-
-    /* COMPANY GENERATE */
-    function generateCoy() {
-      //append/labelling/styling distinct company
-      $("#kpiSelect").append(
-        "<ul id='coy' class='list-unstyled' title='Company'>"+
-          "<li id='selectcoy' hidden><span id='spanselectcoy'>&nbsp;&nbsp;Company</span></li>"+
-        "</ul>");
-      $("#spanselectcoy")
-          .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
-      //var list_coy generated by other process, got from js/ folder, show first item only
-      for(i = 0; i < list_coy.length; i++) {
-        if(i == 0)
-          createList("coy",list_coy[i].code,list_coy[i].name,true);
-        else
-          createList("coy",list_coy[i].code,list_coy[i].name,false);
-      }
-      //flag to switch data [un]loading
-      arrFlag.push({code: "coy", flag: 0});
-    }
-    /* *** */
-
-    /* PRODUCT GENERATE */
-    function generateLob() {
-      //append/labelling/styling distinct product
-      $("#kpiSelect").append(
-        "<ul id='lob' class='list-unstyled' title='Business Unit'>"+
-          "<li id='selectlob' hidden><span id='spanselectlob'>&nbsp;&nbsp;Business Unit</span></li>"+
-        "</ul>");
-      $("#spanselectlob")
-          .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
-      //var list_lob generated by other process, got from js/ folder, show first item only
-      for(i = 0; i < list_lob.length; i++) {
-        if(i == 0)
-          createList("lob",list_lob[i].code,list_lob[i].name,true);
-        else
-          createList("lob",list_lob[i].code,list_lob[i].name,false);
-      }
-      //flag to switch data [un]loading
-      arrFlag.push({code: "lob", flag: 0});
     }
     /* *** */
 
@@ -228,8 +200,8 @@ $(document).ready(function(){
             });
             var childList = getChildList(getValue("dept"));
             toggleChildList(childList[0],"all"+childList[0]);
-            for(i = 0; i < childList.length; i++) {
-              setFlag(childList[i],0);
+            for(var idx = 0; idx < childList.length; idx++) {
+              setFlag(childList[idx],0);
             }
           }
           showJson();
@@ -251,9 +223,9 @@ $(document).ready(function(){
       if(thisId != "select"+parentId) {
         //hide all current member/level, and set flag to hide
         var childList = getChildList(parentId);
-        for(i = 0; i < childList.length; i++) {
-          $("#"+childList[i]).slideUp(translation);
-          setFlag(childList[i],0);
+        for(var idx = 0; idx < childList.length; idx++) {
+          $("#"+childList[idx]).slideUp(translation);
+          setFlag(childList[idx],0);
         }
         if(getFlag(parentId) == 1) {
           //if option 'all' selected, set show data to detail, else get from current value
@@ -271,8 +243,8 @@ $(document).ready(function(){
               //create child list from json file, generated by other process, got from js/ folder
               var childDetList = window["list_"+childList[0].replace(getValue("dept")+"-","")+"_"+
                   parentId.replace(getValue("dept")+"-","")+"_"+getValue("members")];
-              for(i = 0; i < childDetList.length; i++) {
-                createList(childList[0],childDetList[i].code,childDetList[i].name);
+              for(var idx = 0; idx < childDetList.length; idx++) {
+                createList(childList[0],childDetList[idx].code,childDetList[idx].name);
               }
               toggleChildList(childList[0],"all"+childList[0]);
             }
@@ -281,11 +253,13 @@ $(document).ready(function(){
           }
           showJson();
           setFlag(parentId,0);
+          memberShowFlag = 0;
           $("div:has('#kpiMember')").css("position", "fixed").css("top", kpiDefTopPos);
         } else {
           setFlag(parentId,1);
           setDefTreeView();
-          $("div:has('#kpiMember')").css("position", "absolute").css("top", h/2 + 100);
+          memberShowFlag = 1;
+          kpiOptLastTopPos = h/2 + 100;
         }
         toggleList(parentId,thisId);
         $("#kpiSelect,#kpiMember hr").slideToggle(translation);
@@ -305,40 +279,43 @@ $(document).ready(function(){
     //click on download file type option
     $("#mdl-download .modal-footer button:not('#btn-cancel')").click(function() {
       extType = this.id.replace("btn-","");//grab extention from id
-      $("#loading").show();
+      loadingStateChange("show");
       //request file to server w/ report parameter
       //show download prompted when succeed
-      $.post("/FOCUS/apps/data/download/request",{
-        deptName: getName("#kpiSelect #dept li"),
-        dtsName: getName("#kpiSelect #dts li"),
-        coyName: getName("#kpiSelect #coy li"),
-        lobName: getName("#kpiSelect #lob li"),
-        membersName: getName("#kpiMember li"),
-        kpiName: $("#spanKpiDet").text().trim(" "),
-        kpiBrkdwnFlag: kpiBrkdwnFlag,
-        extType: extType},
-      function(data,status) {
-        if(status == "success") {
-          window.location.replace("/FOCUS/apps/data/download");
-          $("#loading").hide();
-        } else {
-          modalCommonShow(3,"Download report unsuccessfully: status = " + status);
-        }
-      }).fail(function(d) {
-        modalCommonShow(2,"Failed to download report: ", d);
-      }).error(function(d) {
-        modalCommonShow(1,"Error download report: ", d);
-      });
+      var execFunc = function() { 
+        $.post("../../apps/data/download/request",{
+          deptName: getName("#kpiSelect #dept li"),
+          dtsName: getName("#kpiSelect #dts li"),
+          coyName: getName("#kpiSelect #coy li"),
+          lobName: getName("#kpiSelect #lob li"),
+          membersName: getName("#kpiMember li"),
+          kpiName: $("#kpi ul li:nth(0)").text().trim(" "),
+          kpiBrkdwnFlag: kpiBrkdwnFlag,
+          extType: extType},
+        function(data,status) {
+          if(status === "success") {
+            window.location.replace("../../apps/data/download");
+            loadingStateChange("hide");
+          } else {
+            modalCommonShow(3,"Download report unsuccessfully: status = " + status);
+          }
+        }).fail(function(d) {
+          modalCommonShow(2,"Failed to download report: ", d);
+        }).error(function(d) {
+          modalCommonShow(1,"Error download report: ", d);
+        });
+      };
+      checkCurrSessAndExec(execFunc);
     });
     
     //click on zoom in button
     $("#zoom-slider #btn-zoom-in").click(function() {        
-      for(i = 0; i < arrZoomPoint.length; i++) {
+      for(var idx = 0; idx < arrZoomPoint.length; idx++) {
         //execute on current zoom index, apply if index greater than 1
         //see arrZoomPoint array to check the value of each position
         //decreased zooming by one position
         //redefine left/top tree position if zooming is greater than normal to avoid hidden view
-        if(i === currZoomPoint && i > 0) {
+        if(idx === currZoomPoint && idx > 0) {
           currZoomPoint -= 1;
           var bodyObj = $("#body");
           bodyObj.css("transform", "scale("+arrZoomPoint[currZoomPoint].scale+")");
@@ -354,12 +331,12 @@ $(document).ready(function(){
     
     //click on zoom out button
     $("#zoom-slider #btn-zoom-out").click(function() {        
-      for(i = 0; i < arrZoomPoint.length; i++) {
+      for(var idx = 0; idx < arrZoomPoint.length; idx++) {
         //execute on current zoom index, apply if index less than array length
         //see arrZoomPoint array to check the value of each position
         //increased zooming by one position
         //redefine left/top tree position if zooming is greater than normal to avoid hidden view
-        if(i === currZoomPoint && i < arrZoomPoint.length-1) {
+        if(idx === currZoomPoint && idx < arrZoomPoint.length-1) {
           currZoomPoint += 1;
           var bodyObj = $("#body");
           bodyObj.css("transform", "scale("+arrZoomPoint[currZoomPoint].scale+")");
@@ -392,6 +369,22 @@ $(document).ready(function(){
       $("div#map").hide("slow");
     });
 
+    //listener when mouse/key scroll up or down
+    //apply position when member list option displayed, depend on scroll position to member option position difference
+    $(window).on("scroll", function() {
+      if(memberShowFlag == 1) {
+        if($(window).scrollTop() > kpiOptLastTopPos)
+          $("div:has('#kpiMember')").css("position", "absolute").css("top", kpiOptLastTopPos);
+        else
+          $("div:has('#kpiMember')").css("position", "fixed").css("top", kpiDefTopPos);
+      }
+    });
+    
+    //click on back button
+    $("#zoom-slider #btn-back").click(function(){
+      backToMain();
+    });
+    
     /* *** */
 
     /* DATA MANIPULATION FUNCTION */
@@ -400,21 +393,24 @@ $(document).ready(function(){
       var linkTreeTemp = getKpiName(); //json name to create
       //generate json, if current json different from previous one and GET status is success then reload data
       if(linkTree != linkTreeTemp) {
-        $("#loading").show();
-        $.get("/FOCUS/apps/data/kpi",{jsonName: linkTreeTemp, delimiter: delimiter},function(data,status) {
-          if(status == "success") {
-            linkTree = linkTreeTemp;
-            currZoomPoint = 2;
-            $("#zoom-slider #btn-slider").css("left",arrZoomPoint[currZoomPoint].left);
-            updateTree(data);
-          } else {
-            modalCommonShow(3,"Loading kpi json unsuccessfully: status = " + status);
-          }
-        }).fail(function(d) {
-          modalCommonShow(2,"Failed to load kpi json: ", d);
-        }).error(function(d) {
-          modalCommonShow(1,"Error loading kpi json: ", d);
-        });
+        loadingStateChange("show");
+        var execFunc = function() {
+          $.get("../../apps/data/kpi",{jsonName: linkTreeTemp, delimiter: delimiter},function(data,status) {
+            if(status === "success") {
+              linkTree = linkTreeTemp;
+              currZoomPoint = 2;
+              $("#zoom-slider #btn-slider").css("left",arrZoomPoint[currZoomPoint].left);
+              updateTree(data);
+            } else {
+              modalCommonShow(3,"Loading kpi json unsuccessfully: status = " + status);
+            }
+          }).fail(function(d) {
+            modalCommonShow(2,"Failed to load kpi json: ", d);
+          }).error(function(d) {
+            modalCommonShow(1,"Error loading kpi json: ", d);
+          });
+        };
+        checkCurrSessAndExec(execFunc);
       }
     }
 
@@ -441,7 +437,7 @@ $(document).ready(function(){
       }
       update(root);
       setDefTreeView();
-      $("#loading").hide();
+      loadingStateChange("hide");
     }
 
     //update tree object
@@ -465,7 +461,7 @@ $(document).ready(function(){
         .attr("transform", function(d) {return "translate(" + source.y0 + "," + source.x0 + ")";});
 
       //put growth value on foreignObject or text node (if IE browser) and its properties
-      if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) {//IF IE
+      if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) {//If IE
         nodeEnter
           .append("svg:rect")//only for background
           .attr("width",function(d) {return (
@@ -477,7 +473,7 @@ $(document).ready(function(){
           //filled object with color related to its value, except root has additional color if it not in breakdown view
           .style("fill", function(d){
             if(kpiBrkdwnFlag == 0 && d == root) {
-                return "cyan";
+                return "purple";
               } else {
                 if(d.button == "btn btn-success btn-sm") {
                   return "green";
@@ -491,28 +487,7 @@ $(document).ready(function(){
               }})
           .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
           .attr("y", "4")
-          .attr("x", "13")
-          //show additional info when hover object
-          .on("mouseover",function(d) {
-            div
-              .html(function() {
-                if(kpiBrkdwnFlag == 0) {
-                  return "<span>Click to show " + ((d == root || kpiDetFlag == 1) ? "detail" : "breakdown") + "</span>";
-                } else {
-                  return "<span>Click to " + (d == root ? "back to KPI" : "show detail") + "</span>";
-                }
-              })
-              .style("height","30px")
-              .style("left", (d3.event.pageX + 28) + "px")
-              .style("top", (d3.event.pageY - 28) + "px")
-              .style("opacity",0.9);
-          })
-          //hide additional info when mouse leaving object
-          .on("mouseout",function(d) {
-            div
-              .style("height","130px")
-              .style("opacity",0);
-          })
+          .attr("x", function(d) {return d.systemId === 3 ? "40" : "13";})
           //show info by breakdown or detail depend on flag
           .on("click",function(d) {
             showInfo(root,d);
@@ -523,20 +498,38 @@ $(document).ready(function(){
           .style("font-size","10px")
           .attr("fill",function(d){if(d.button == "btn btn-default btn-sm") return "black"; else return "white";})
           .attr("y", "17")
-          .attr("x", "17");
+          .attr("x", function(d) {return d.systemId === 3 ? "44" : "17";})
+          .style("cursor",function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
+          .on("click", function(d) {
+            showInfo(root,d);
+          });
+        //add link to direct to key process
+        nodeEnter
+          .append("svg:text")
+          .text(function(d) {return d.systemId === 3 ? "Link" : "";})
+          .attr("fill","blue")
+          .attr("y", "17")
+          .attr("x", "15")
+          .style("text-decoration","underline")
+          .style("font-style","italic")
+          .style("cursor","pointer")
+          .on("click", function(d) {
+            //window.location.replace("../../apps/keypro/application?kpiId="+d.kpi);
+            window.open("../../apps/keypro/application?kpiId="+d.kpi,"_blank");
+          });
       } else {
         nodeEnter
           .append("svg:foreignObject")
-          .attr("width", function(d) {return (d.name.length < 10? 15 : 10) * (d.name.length);})
+          .attr("width", function(d) {if(d.name.length * 10 > 320) return 320; return (d.name.length < 10? 15 : 8) * (d.name.length);})
           .attr("height", "22px")
           .attr("id","foreignObject")
           .attr("y", "0em")
-          .attr("x", "1.0em")
+          .attr("x", function(d) {return d.systemId === 3 ? "2.3em" : "1.0em";})
           .style("opacity","0.8")
           //filled object with color and icon related to its value, except root has additional color if it not in breakdown view
           .html(function(d) {
-            var htmlElement = "<button class='"+d.button+"' title='Show breakdown'>"+d.name+
-              "&nbsp;<span class='"+d.icon+"'></span></button>";
+            var htmlElement = "<button class='"+d.button+"' title='Show breakdown'>"+              
+              d.name+"&nbsp;"+(navigator.userAgent.indexOf("Chrome") == -1 ? "<span class='"+d.icon+"'></span>" : "")+"</button>"; //If Chrome
             if(kpiBrkdwnFlag == 0) {
               if(d == root) {
                 htmlElement = htmlElement.replace("title='Show breakdown'","style='cursor: not-allowed'");
@@ -561,18 +554,46 @@ $(document).ready(function(){
             //$("div#map").hide("slow");
             showInfo(root,d);
           });
+        //add link to direct to key process
+        nodeEnter
+          .append("svg:foreignObject")
+          .attr("width", function(d) {return d.systemId === 3 ? "20px":"0px";})
+          .attr("height", function(d) {return d.systemId === 3 ? "22px":"0px";})
+          .attr("y", "0em")
+          .attr("x", "1.0em")
+          .html(function(d) {
+            var iconClass = navigator.userAgent.indexOf("Chrome") === -1 ? "class='glyphicon glyphicon-link'" : "";
+            var linkTxt = navigator.userAgent.indexOf("Chrome") === -1 ? "" : "&circlearrowleft;";
+            return d.systemId === 3 ?
+              "<a "+iconClass+" href='../../apps/keypro/application?kpiId="+d.kpi+"' target='_blank' title='Link to process'>"+linkTxt+"</a>":"";});
       }
       //polyline nodes and its properties
       nodeEnter.append("svg:polygon")
         .attr("points", "14,-4 14,4 16,4 16,9 20,0 16,-9 16,-4")
-        .attr("fill",function(d){return d.color;});
+        .attr("fill",function(d){return d.color;})
+        ;
       //circle nodes and its properties
       nodeEnter
-        .append("svg:circle")
-        .attr("r", rCircle)
+        //.append("svg:circle")
+        .append("svg:rect")
+        .attr("class",function(d) {
+          if(d.color === "green") return "ball-rounding";
+          if(d.color === "yellow") return "ball-rounding-fast";
+          if(d.color === "red") return "ball-beat";
+          return "";})
+        //.attr("r", rCircle)
+        .attr("width","30px")
+        .attr("height","30px")
+        .attr("x","-15px")
+        .attr("y","-15px")
+        .attr("rx",function(d){return d.systemId === 3 ? "4px" : "15px";})
+        .attr("ry",function(d){return d.systemId === 3 ? "4px" : "15px";})
+        .style("fill", function(d){return "url(#"+d.color+")";})
+        .style("fill-opacity","1")
+        .style("cursor", function(d) {return d._children ? "pointer" : "default";})
         .on("click", function(d) {
           hoverFlag = 1;
-          if(d != root) {toggle(d);update(d);}
+          if(d != root && (d.children || d._children)) {toggle(d);update(d);}
           tooltip
             .transition()
             .duration(0)
@@ -586,10 +607,13 @@ $(document).ready(function(){
             .style("left", "0px")
             .style("top", "0px");
         })
-        .style("fill", function(d){return "url(#"+d.color+")";})
-        .style("cursor", function(d) {return d._children ? "pointer" : "default";})
         .on("mouseover", function(d) {
-          if(hoverFlag == 0 && d.color != "cyan" && d.color != "grey") {
+          var suffix = d.satuan == "P" ? "%" : ""; //satuan, mis. %
+          var prefix = d.satuan == "A" ? "Rp " : ""; //simbol mata uang
+          var suffix1 = d.achieve == null ? suffix : "%"; //satuan, mis. % di batas atas/bawah
+          var prefix1 = d.achieve == null ? prefix : ""; //simbol mata uang di batas atas/bawah
+          if(hoverFlag == 0 && d.color != "purple" && d.color != "grey") {
+            //alert(d.satuan);
             tooltip
               .transition()
               .duration(500)
@@ -597,12 +621,17 @@ $(document).ready(function(){
             tooltip
               .html("<div>"+
                       "<table class='table-data-hover'>"+
-                        "<thead><td></td><td>Value</td></thead>"+
-                        "<tbody><tr><td>Target</td><td>"+numberWithCommas(d.target)+"</td></tr>" +
-                        "<tr><td>Actual</td><td>"+numberWithCommas(d.actual)+"</td></tr>" +
-                        "<tr><td>Achieve</td><td>"+d.achieve+"%</td></tr>" +
-                        "<tr><td nowrap>Last Month</td><td>"+numberWithCommas(d.lastMonth)+"</td></tr>" +
-                        "<tr><td>Growth</td><td>"+d.growth+"%</td></tr></tbody>"+
+                        "<thead><tr><td>"+d.name+"</td><td>Value</td></tr></thead>"+
+                        "<tbody>"+
+                        "<tr><td>Target</td><td>"+numberFormat(d.target,suffix,prefix)+"</td></tr>" +
+                        "<tr><td>Batas Atas</td><td>"+numberFormat(d.batasAtas,suffix1,prefix1)+"</td></tr>" +
+                        "<tr><td>Batas Bawah</td><td>"+numberFormat(d.batasBawah,suffix1,prefix1)+"</td></tr>" +
+                        "<tr><td>Actual</td><td>"+(d.satuan == "B"?(d.actual == 1?"Sudah":"Belum"):numberFormat(d.actual,suffix,prefix))+"</td></tr>" +
+                        "<tr><td>Achieve</td><td>"+numberFormat(d.achieve,"%")+"</td></tr>" +
+                        "<tr><td nowrap>Last Month</td><td>"+numberFormat(d.lastMonth,suffix,prefix)+"</td></tr>" +
+                        "<tr><td>Growth</td><td>"+numberFormat(d.growth,"%")+"</td></tr>"+
+                        "<tr><td>Populate</td><td>"+d.datePopulate.replace(" ","<br>")+"</td></tr>"+
+                        "</tbody>"+
                       "</table>"+
                     "</div>")
               .style("left",function() {
@@ -616,11 +645,14 @@ $(document).ready(function(){
                         (bodyProp.left * arrZoomPoint[currZoomPoint].scale)) + "px";
               })
               .style("top",function() {
+                var pageY = d3.event.pageY;
                 if(currZoomPoint >= 2)
-                  return (1/arrZoomPoint[currZoomPoint].scale*d3.event.pageY -
-                        1/arrZoomPoint[currZoomPoint].scale*bodyProp.top) + "px";
-                return d3.event.pageY * 1/arrZoomPoint[currZoomPoint].scale -
-                        arrTopPoint[arrZoomPoint[currZoomPoint].scale] + "px";
+                  return (1/arrZoomPoint[currZoomPoint].scale*pageY -
+                        1/arrZoomPoint[currZoomPoint].scale*bodyProp.top -
+                        (pageY > h ? 200 : 0)) + "px";
+                return (pageY * 1/arrZoomPoint[currZoomPoint].scale -
+                        arrTopPoint[arrZoomPoint[currZoomPoint].scale] +
+                        (kpiBrkdwnFlag == 0 ? 0 : 70/Math.pow(arrZoomPoint[currZoomPoint].scale,2))) + "px";
               });
             linktip
               .transition()
@@ -649,7 +681,7 @@ $(document).ready(function(){
           hoverFlag = 0;
         })
         .on("mouseout", function(d) {
-          if(hoverFlag == 0 && d.color != "cyan" && d.color != "grey") {
+          if(hoverFlag == 0 && d.color != "purple" && d.color != "grey") {
             tooltip
               .transition()
               .duration(1500)
@@ -817,11 +849,11 @@ $(document).ready(function(){
         linGradRed
           .append("svg:stop")
           .attr("offset","0%")
-          .attr("style","stop-color:red;stop-opacity:1");
+          .attr("style","stop-color:#c00;stop-opacity:1");
         linGradRed
           .append("svg:stop")
           .attr("offset","100%")
-          .attr("style","stop-color:white;stop-opacity:1");
+          .attr("style","stop-color:#fdd;stop-opacity:1");
         linGradGreen = vis
           .append("svg:defs")
           .append("svg:linearGradient")
@@ -834,11 +866,11 @@ $(document).ready(function(){
         linGradGreen
           .append("svg:stop")
           .attr("offset","0%")
-          .attr("style","stop-color:green;stop-opacity:1");
+          .attr("style","stop-color:#090;stop-opacity:1");
         linGradGreen
           .append("svg:stop")
           .attr("offset","100%")
-          .attr("style","stop-color:white;stop-opacity:1");
+          .attr("style","stop-color:#dfd;stop-opacity:1");
         linGradYellow = vis
           .append("svg:defs")
           .append("svg:linearGradient")
@@ -851,28 +883,28 @@ $(document).ready(function(){
         linGradYellow
           .append("svg:stop")
           .attr("offset","0%")
-          .attr("style","stop-color:yellow;stop-opacity:1");
+          .attr("style","stop-color:#ee0;stop-opacity:1");
         linGradYellow
           .append("svg:stop")
           .attr("offset","100%")
-          .attr("style","stop-color:white;stop-opacity:1");
-        linGradCyan = vis
+          .attr("style","stop-color:#ffd;stop-opacity:1");
+        linGradBlue = vis
           .append("svg:defs")
           .append("svg:linearGradient")
-          .attr("id","cyan")
+          .attr("id","blue")
           .attr("x1","70%")
           .attr("y1","80%")
           .attr("x2","10%")
           .attr("y2","0%")
           .attr("spreadMethod", "pad");
-        linGradCyan
+        linGradBlue
           .append("svg:stop")
           .attr("offset","0%")
-          .attr("style","stop-color:darkcyan;stop-opacity:1");
-        linGradCyan
+          .attr("style","stop-color:#009;stop-opacity:1");
+        linGradBlue
           .append("svg:stop")
           .attr("offset","100%")
-          .attr("style","stop-color:white;stop-opacity:1");
+          .attr("style","stop-color:#ddf;stop-opacity:1");
         linGradGrey = vis
           .append("svg:defs")
           .append("svg:linearGradient")
@@ -889,7 +921,24 @@ $(document).ready(function(){
         linGradGrey
           .append("svg:stop")
           .attr("offset","100%")
-          .attr("style","stop-color:white;stop-opacity:1");
+          .attr("style","stop-color:#ddd;stop-opacity:1");
+        linGradPurple = vis
+          .append("svg:defs")
+          .append("svg:linearGradient")
+          .attr("id","purple")
+          .attr("x1","70%")
+          .attr("y1","80%")
+          .attr("x2","10%")
+          .attr("y2","0%")
+          .attr("spreadMethod", "pad");
+        linGradPurple
+          .append("svg:stop")
+          .attr("offset","0%")
+          .attr("style","stop-color:#337;stop-opacity:1");
+        linGradPurple
+          .append("svg:stop")
+          .attr("offset","100%")
+          .attr("style","stop-color:#ddf;stop-opacity:1");
         radGrad = vis
           .append("svg:defs")
           .append("svg:radialGradient")
@@ -928,11 +977,11 @@ $(document).ready(function(){
 
     //show map (next future?)
     function mapShow(kpiTemp) {
-      $("#loading").show();
+      loadingStateChange("show");
       $("div#map iframe").attr("src","http://10.17.18.123:8081/poi/index.jsp?kpi="+kpiTemp);
       $("div#map").show("slow");
-      setDefTreeView();
-      $("#loading").hide();
+      setDefTreeView();      
+      loadingStateChange("hide");
     }
 
     //show info by breakdown (new tree hierarchy) or detail depend on flag
@@ -940,20 +989,30 @@ $(document).ready(function(){
       if(!(dataDet == dataRoot && kpiBrkdwnFlag == 0)) {
         if(kpiDetFlag == 0) {
           if(dataDet == dataRoot && kpiBrkdwnFlag == 1) {
-            setValue("kpiCode","");
+            /*setValue("kpiCode","");
             showJson();
             //hide all option
             $("div:has('#kpiMember')").slideDown(translation);
             $("#kpi").slideUp(translation);
-            kpiBrkdwnFlag = 0;
+            $("#kpi ul li").remove();
+            kpiBrkdwnFlag = 0;*/
+            backToMain();
           } else if(dataDet != dataRoot && kpiBrkdwnFlag == 0)  {
             setValue("kpiCode",dataDet.kpi);
             showJson();
             //show back all option
             $("div:has('#kpiMember')").slideUp(translation);
-            $("#spanKpi").html("&nbsp;&nbsp;" + dataRoot.name);
-            $("#spanKpiDet").html("&nbsp;&nbsp;" + dataDet.name);
+            $("#kpi ul").append("<li><span>&nbsp;&nbsp;"+dataRoot.name+": "+dataDet.name+"</span></li>");
+            $("#kpiSelect ul li").each(function() {
+              if($(this).css("display") != "none" && !$(this).children("span").hasClass("glyphicon-tags")
+                && $(this).children("span").hasClass("btn-primary"))
+                $("#kpi ul").append(
+                  "<li><span>&nbsp;&nbsp;"+$(this).text().trim()+"</span></li>");
+            });   
+            $("#kpi ul li span")
+              .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
             $("#kpi").slideDown(translation);
+            $("#zoom-slider #btn-back").slideDown(translation);
             kpiBrkdwnFlag = 1;
           //just popup info
           } else {
@@ -967,12 +1026,20 @@ $(document).ready(function(){
 
     //detail info from dataDetTemp json object
     function showInfoDet(dataDetTemp) {
+      var suffix = dataDetTemp.satuan == "P" ? "%" : ""; //satuan, mis. %
+      var prefix = dataDetTemp.satuan == "A" ? "Rp " : ""; //simbol mata uang
+      var suffix1 = dataDetTemp.achieve == null ? suffix : "%"; //satuan, mis. % di batas atas/bawah
+      var prefix1 = dataDetTemp.achieve == null ? prefix : ""; //simbol mata uang di batas atas/bawah
       $("#mdl-detail .modal-body #title").text(dataDetTemp.name);
-      $("#mdl-detail .modal-body #target").text(numberWithCommas(dataDetTemp.target));
-      $("#mdl-detail .modal-body #actual").text(numberWithCommas(dataDetTemp.actual));
-      $("#mdl-detail .modal-body #achieve").text(dataDetTemp.achieve+"%");
-      $("#mdl-detail .modal-body #lastMonth").text(numberWithCommas(dataDetTemp.lastMonth));
-      $("#mdl-detail .modal-body #growth").text(dataDetTemp.growth+"%");
+      $("#mdl-detail .modal-body #target").text(numberFormat(dataDetTemp.target,suffix,prefix));
+      $("#mdl-detail .modal-body #batasAtas").text(numberFormat(dataDetTemp.batasAtas,suffix1,prefix1));
+      $("#mdl-detail .modal-body #batasBawah").text(numberFormat(dataDetTemp.batasBawah,suffix1,prefix1));
+      $("#mdl-detail .modal-body #actual").text((dataDetTemp.satuan == "B" ? (dataDetTemp.actual == 1 ? "Sudah" : "Belum") :
+              numberFormat(dataDetTemp.actual,suffix,prefix)));
+      $("#mdl-detail .modal-body #achieve").text(numberFormat(dataDetTemp.achieve,"%"));
+      $("#mdl-detail .modal-body #lastMonth").text(numberFormat(dataDetTemp.lastMonth,suffix,prefix));
+      $("#mdl-detail .modal-body #growth").text(numberFormat(dataDetTemp.growth,"%"));
+      $("#mdl-detail .modal-body #populate").text(dataDetTemp.datePopulate);
       $("#mdl-detail").modal("show");
     }
 
@@ -1068,12 +1135,25 @@ $(document).ready(function(){
     function getName(pSelector) {
       var name = "";
       $(pSelector).each(function() {
-        if(this.id.indexOf("select") === -1 && $(this).parent("ul").css("display") !== "none" && $(this).css("display") !== "none") {
+        if($(this).css("display") != "none" && !$(this).children("span").hasClass("glyphicon-tags")
+                && $(this).children("span").hasClass("btn-primary")) {
           name = $(this).text().trim(" ");
           return false;
         }
       });
       return name;
+    }
+    
+    //back application to its main page
+    function backToMain() {      
+      setValue("kpiCode","");
+      showJson();
+      //hide all option
+      $("div:has('#kpiMember')").slideDown(translation);
+      $("#kpi").slideUp(translation);
+      $("#zoom-slider #btn-back").slideUp(translation);
+      $("#kpi ul li").remove();
+      kpiBrkdwnFlag = 0;
     }
     /* *** */
 });

@@ -216,4 +216,144 @@ public class TableValue implements Serializable {
   public void setId(String id) {
     this.id = id;
   }
+
+  /**
+   * @return the col11
+   */
+  public String getCol11() {
+    return col11;
+  }
+
+  /**
+   * @param col11 the col11 to set
+   */
+  public void setCol11(String col11) {
+    this.col11 = col11;
+  }
+
+  /**
+   * @return the col12
+   */
+  public String getCol12() {
+    return col12;
+  }
+
+  /**
+   * @param col12 the col12 to set
+   */
+  public void setCol12(String col12) {
+    this.col12 = col12;
+  }
+
+  /**
+   * @return the col13
+   */
+  public String getCol13() {
+    return col13;
+  }
+
+  /**
+   * @param col13 the col13 to set
+   */
+  public void setCol13(String col13) {
+    this.col13 = col13;
+  }
+
+  /**
+   * @return the col14
+   */
+  public String getCol14() {
+    return col14;
+  }
+
+  /**
+   * @param col14 the col14 to set
+   */
+  public void setCol14(String col14) {
+    this.col14 = col14;
+  }
+
+  /**
+   * @return the col15
+   */
+  public String getCol15() {
+    return col15;
+  }
+
+  /**
+   * @param col15 the col15 to set
+   */
+  public void setCol15(String col15) {
+    this.col15 = col15;
+  }
+
+  /**
+   * @return the col16
+   */
+  public String getCol16() {
+    return col16;
+  }
+
+  /**
+   * @param col16 the col16 to set
+   */
+  public void setCol16(String col16) {
+    this.col16 = col16;
+  }
+
+  /**
+   * @return the col17
+   */
+  public String getCol17() {
+    return col17;
+  }
+
+  /**
+   * @param col17 the col17 to set
+   */
+  public void setCol17(String col17) {
+    this.col17 = col17;
+  }
+
+  /**
+   * @return the col18
+   */
+  public String getCol18() {
+    return col18;
+  }
+
+  /**
+   * @param col18 the col18 to set
+   */
+  public void setCol18(String col18) {
+    this.col18 = col18;
+  }
+
+  /**
+   * @return the col19
+   */
+  public String getCol19() {
+    return col19;
+  }
+
+  /**
+   * @param col19 the col19 to set
+   */
+  public void setCol19(String col19) {
+    this.col19 = col19;
+  }
+
+  /**
+   * @return the col20
+   */
+  public String getCol20() {
+    return col20;
+  }
+
+  /**
+   * @param col20 the col20 to set
+   */
+  public void setCol20(String col20) {
+    this.col20 = col20;
+  }
 }

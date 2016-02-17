@@ -24,6 +24,17 @@
 	<!-- Configures the annotation-driven Spring MVC Controller programming model.
 	Note that, with Spring 3.0, this tag works in Servlet MVC only!  -->
 	<mvc:annotation-driven />
+        
+        <!-- Caching control on Spring MVC 3 -->
+        <mvc:interceptors>
+            <bean id="webContentInterceptor" 
+                  class="org.springframework.web.servlet.mvc.WebContentInterceptor">
+                <property name="cacheSeconds" value="0"/>
+                <property name="useExpiresHeader" value="true"/>
+                <property name="useCacheControlHeader" value="true"/>
+                <property name="useCacheControlNoStore" value="true"/>
+            </bean>
+        </mvc:interceptors>
 
         <context:property-placeholder location="classpath:jdbc.properties" />
         <tx:annotation-driven />

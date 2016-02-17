@@ -6,7 +6,7 @@
 /* global btnPrimary, btnDefault, glyTriDown, glyClose, translation, unpickStyle, list_admin, bkLabel, lblStyle */
 
 $(document).ready(function(){
-  $("#loading").show();
+  loadingStateChange("show");
   
   /* VARIABLE DECLARATION */
   var optFlag = 0, //0=show all option, 1=show only selected option
@@ -31,7 +31,9 @@ $(document).ready(function(){
       pagePerLoad = 10, //max page view on loading
       columnsSerial, //columns name of table separated by comma used in SELECT statement
       columnsSerialExt, //columnsSerial with some additional column such an ID or virtual column COLXX
-      orderByColumn; //columns name of table separated by comma used in ORDER BY statement
+      orderByColumn, //columns name of table separated by comma used in ORDER BY statement
+      currPageNoFind = 1, //page no of find table to show on paging
+      maxRecordPerPageFind = 10; //max record view per find page
   /* *** */
 
   //init process early
@@ -58,7 +60,7 @@ $(document).ready(function(){
         $("#adminSelect ul:not('#"+parentId+"')").slideUp(translation);
         $("#adminSelect ul li:not('#select"+parentId+",#"+thisId+"')").slideUp(translation);
         if(thisId !== prevId) {
-          $("#loading").show();
+          loadingStateChange("show");
           $("#adminSelect ul li#"+prevId+" span").attr("class",unpickStyle);
           currId = thisId;
           currPageNo = 1;
@@ -74,7 +76,7 @@ $(document).ready(function(){
 
   // Click on button refresh
   $("#idRefresh").on("click", function() {
-    $("#loading").show();
+    loadingStateChange("show");
     //reload data
     generateData();
   });
@@ -86,13 +88,13 @@ $(document).ready(function(){
     //page no must be less or equal then maximum page allowed
     //reload data on clicked
     if(!$("#"+thisId).hasClass("active") && !$("#"+thisId).hasClass("disabled") && currPageNo <= maxPage) {
-      $("#loading").show();
+      loadingStateChange("show");
       if(thisId === "firstPage")
         currPageNo = 1;
       else if(thisId === "nextPage")
-        currPageNo += 1;
+        currPageNo++;
       else if(thisId === "prevPage")
-        currPageNo -= 1;
+        currPageNo--;
       else if(thisId === "lastPage")
         currPageNo = maxPage;
       else
@@ -132,47 +134,43 @@ $(document).ready(function(){
 
   // Click button find record
   $("#adminTableData thead tr").on("click", "th button#btn-find", function() {
-    $("#loading").show();
-    //populate table data from database
-    //save data to angular var (read AngularJS doc to learn this) that will be used on population
-    //re-generate header
-    //show data
-    $.get("/FOCUS/apps/data/table/value",{tableName: currId, columnsSerialExt: columnsSerialExt, orderByColumn: orderByColumn},
-      function(data,status) {
-      if(status === "success") {
-        $("#search-text").val("");
-        var listFind = $("div#mdl-find div#content div"); //current find scope element
-        var scope = listFind.scope(); //current find scope
-        scope.searchText = "";
-        scope.dataFindList = data;
-        scope.columnsLength = columns.length;
-        scope.$apply();
-        var listFindHdr = listFind.find("tr#header-list-find"); //current header element
-        listFindHdr.children("th").remove();
-        for(i = 0; i < columns.length; i++)
-          listFindHdr.append(
-            "<th>"+columns[i].columnName.replace(/_/g," ")+"</th>");
-        for(i = 0; i < maxNumOfCol - columns.length + 1; i++)
-          listFindHdr.append(
-            "<th></th>");
-        var tableDataWidth = Number($("#adminTableData").css("width").replace("px","")) + 40 + (columns.length * 15) +
-                (maxNumOfCol > columns.length ? (maxNumOfCol-columns.length)*5 : 0); //resize find table depend on its original
-        $("#mdl-find .modal-dialog").css("width",tableDataWidth+"px");
-        $("#mdl-find").modal("show");
-        $("#loading").hide();
-      } else {
-        modalCommonShow(3,"Loading table value json unsuccessfully: status = " + status);
-      }
-    }).fail(function(reqObj,status) {
-      modalCommonShow(2,"Failed to load table value json: ", reqObj);
-    }).error(function(reqObj,status) {
-      modalCommonShow(1,"Error loading table value json: ", reqObj);
-    });
+    $("#search-text").val("");
+    var listFind = $("div#mdl-find div#content div"); //current find scope element
+    listFind.find("p span#prevPageFind, p span#nextPageFind").css("cursor","text").css("color","black").css("text-decoration","none");
+    var scope = listFind.scope();
+    scope.dataFindList = [];
+    scope.$apply();
+    var listFindHdr = listFind.find("tr#header-list-find"); //current header element
+    listFindHdr.children("th").remove();
+    for(var idx = 0; idx < columns.length; idx++)
+      listFindHdr.append(
+        "<th>"+columns[idx].columnName.replace(/_/g," ")+"</th>");
+    for(var idx = 0; idx < maxNumOfCol - columns.length + 1; idx++)
+      listFindHdr.append(
+        "<th></th>");
+    var tableDataWidth = Number($("#adminTableData").css("width").replace("px","")) + 40 + (columns.length * 15) +
+            (maxNumOfCol > columns.length ? (maxNumOfCol-columns.length)*5 : 0); //resize find table depend on its original
+    $("#mdl-find .modal-dialog").css("width",tableDataWidth+"px");
+    $("#mdl-find").modal("show");
+  });
+  
+  // Press enter to execute process
+  $("div#mdl-find input#search-text").keypress(function(e) {
+    if(e.which === 13) {
+      loadFindData(this.id);
+    }
   });
 
+  // Click button previous and next page find
+  $("p span#prevPageFind, p span#nextPageFind").click(function() {
+    if($(this).css("cursor") === "pointer") {
+      loadFindData(this.id);
+    }  
+  });
+  
   // Click button yes confirmation
   $("#mdl-common1 .modal-footer button#btn-yes").click(function(){
-    $("#loading").show();
+    loadingStateChange("show");
     var elementInput = $("#mdl-table #tbl-modal td input, #mdl-table #tbl-modal td select");
     //created sql statement on update, insert and delete
     //execute sql statement on database
@@ -208,40 +206,46 @@ $(document).ready(function(){
         (idColumn === "" ? "ROWID" : idColumn) + " = '" + idRow + "'";
     }
     if(sql != null) {
-      $.post("/FOCUS/apps/data/table/save",{sql: sql},function(data,status) {
-        if(status === "success")
-          generateData();
-        else
-          modalCommonShow(3,"Execute sql statement unsuccessfully: status = " + status);
-      }).fail(function(d) {
-        modalCommonShow(2,"Failed to execute sql statement: ", d);
-      }).error(function(d) {
-        modalCommonShow(1,"Error execute sql statement: ", d);
-      });
+      var execFunc = function() {
+        $.post("../../apps/data/table/save",{sql: sql},function(data,status) {
+          if(status === "success")
+            generateData();
+          else
+            modalCommonShow(3,"Execute sql statement unsuccessfully: status = " + status);
+        }).fail(function(d) {
+          modalCommonShow(2,"Failed to execute sql statement: ", d);
+        }).error(function(d) {
+          modalCommonShow(1,"Error execute sql statement: ", d);
+        });
+      };
+      checkCurrSessAndExec(execFunc);
     } else {
-      $("#loading").hide();
+      loadingStateChange("hide");
     }
   });
   
   // Click button go to record on find
   $("#mdl-find div#content div table#searchTextResults").on("click","tr td button", function() {
-    $("#loading").show();
+    loadingStateChange("show");
     $("#mdl-find").modal("hide");
     idRow = $(this).parent().data("id");
     //go to page of selected record and reload data
-    $.get("/FOCUS/apps/data/table/pageno",{tableName: currId, id: idRow, columnsSerialExt: columnsSerialExt, orderByColumn: orderByColumn},
-      function(data,status) {
-      if(status === "success") {
-        currPageNo = data;
-        generateData();
-      } else {
-        modalCommonShow(3,"Generate page no unsuccessfully: status = " + status);
-      }
-    }).fail(function(reqObj,status) {
-      modalCommonShow(2,"Failed to generate page no: ", reqObj);
-    }).error(function(reqObj,status) {
-      modalCommonShow(1,"Error generate page no: ", reqObj);
-    });
+    var execFunc = function() {
+      $.get("../../apps/data/table/pageno",{tableName: currId, id: idRow, columnsSerialExt: columnsSerialExt, orderByColumn: orderByColumn},
+        function(data,status) {
+        if(status === "success") {
+          currPageNo = data;
+          generateData();
+        } else {
+          modalCommonShow(3,"Generate page no unsuccessfully: status = " + status);
+        }
+      }).fail(function(reqObj,status) {
+        modalCommonShow(2,"Failed to generate page no: ", reqObj);
+      }).error(function(reqObj,status) {
+        modalCommonShow(1,"Error generate page no: ", reqObj);
+      });
+    };
+    checkCurrSessAndExec(execFunc);
   });
   /* *** */
 
@@ -253,22 +257,23 @@ $(document).ready(function(){
     //generate option list from json file (has generated on scheduler process)
     //styling each list
     //setup first record id and table title
-    for(i = 0; i < list_admin.length; i++) {
-      if(prevParent !== list_admin[i].parentCode) {
+    for(var idx = 0; idx < list_admin.length; idx++) {
+      if(prevParent !== list_admin[idx].parentCode) {
         $("#adminSelect").append(
-          "<ul id='"+list_admin[i].parentCode+"' class='list-unstyled'"+(i === 0 ? "" : " style='display: none'")+">"+
-            "<li id='select"+list_admin[i].parentCode+"'><span id='spanselect"+list_admin[i].parentCode+"'>&nbsp;&nbsp;"+list_admin[i].parentName+"</span></li>"+
+          "<ul id='"+list_admin[idx].parentCode+"' class='list-unstyled'"+(idx === 0 ? "" : " style='display: none'")+">"+
+            "<li id='select"+list_admin[idx].parentCode+"'><span id='spanselect"+list_admin[idx].parentCode+
+              "'>&nbsp;&nbsp;"+list_admin[idx].parentName+"</span></li>"+
           "</ul>");
-        $("#spanselect"+list_admin[i].parentCode)
+        $("#spanselect"+list_admin[idx].parentCode)
             .attr("class",lblStyle).css("background-color",bkLabel).css("text-align","left").css("cursor","default");
-        prevParent = list_admin[i].parentCode;
+        prevParent = list_admin[idx].parentCode;
       }
-      if(i === 0) {
-        currId = list_admin[i].code;
+      if(idx === 0) {
+        currId = list_admin[idx].code;
         setTabelTitle();
-        createList(list_admin[i].parentCode,list_admin[i].code,list_admin[i].name,true);
+        createList(list_admin[idx].parentCode,list_admin[idx].code,list_admin[idx].name,true);
       } else {
-        createList(list_admin[i].parentCode,list_admin[i].code,list_admin[i].name,false);
+        createList(list_admin[idx].parentCode,list_admin[idx].code,list_admin[idx].name,false);
       }
     }
   }
@@ -280,53 +285,56 @@ $(document).ready(function(){
     //regenerate header
     //re-apply angular var data
     //generate paging and its status
-    $.get("/FOCUS/apps/data/table",{tableName: currId, pageNo: currPageNo},function(data,status) {
-      if(status === "success") {
-        contents = data.contents;
-        columns = data.columns;
-        maxPage = data.maxPage;
-        maxId = data.maxId;
-        if(currId !== prevIdTemp) {
-          dropDownList = data.dropDownList;
-          columnsCons = data.columnsCons;
-          idColumn = data.idColumn;
-          columnsSerial = data.columnsSerial;
-          columnsSerialExt = data.columnsSerialExt;
-          orderByColumn = data.orderByColumn;
+    var execFunc = function() {
+      $.get("../../apps/data/table",{tableName: currId, pageNo: currPageNo},function(data,status) {
+        if(status === "success") {
+          contents = data.contents;
+          columns = data.columns;
+          maxPage = data.maxPage;
+          maxId = data.maxId;
+          if(currId !== prevIdTemp) {
+            dropDownList = data.dropDownList;
+            columnsCons = data.columnsCons;
+            idColumn = data.idColumn;
+            columnsSerial = data.columnsSerial;
+            columnsSerialExt = data.columnsSerialExt;
+            orderByColumn = data.orderByColumn;
+          }
+          $("#adminTableData thead tr th:not('#btn-support')").remove();
+          for(var idx = columns.length - 1; idx >= 0; idx--) {
+            $("#adminTableData thead tr").prepend(
+              "<th>"+columns[idx].columnName.replace(/_/g," ")+"</th>"
+            );
+          }
+          var listData = $("#adminTableData tbody");
+          var scope = listData.scope();
+          scope.dataList = contents;
+          scope.$apply();
+          listData.find("tr td").each(function() {
+            if($(this).index() > columns.length - 1 && $(this).children("button").attr("id") == null)
+              $(this).hide();
+          });
+          setPagination();
+          switchPageStatus();
+          setCurrentRecordBack();
+          loadingStateChange("hide");
+        } else {
+          modalCommonShow(3,"Generate table content unsuccessfully: status = " + status);
         }
-        $("#adminTableData thead tr th:not('#btn-support')").remove();
-        for(i = columns.length - 1; i >= 0; i--) {
-          $("#adminTableData thead tr").prepend(
-            "<th>"+columns[i].columnName.replace(/_/g," ")+"</th>"
-          );
-        }
-        var listData = $("#adminTableData tbody");
-        var scope = listData.scope();
-        scope.dataList = contents;
-        scope.$apply();
-        listData.find("tr td").each(function() {
-          if($(this).index() > columns.length - 1 && $(this).children("button").attr("id") == null)
-            $(this).hide();
-        });
-        setPagination();
-        switchPageStatus();
-        setCurrentRecordBack();
-        $("#loading").hide();
-      } else {
-        modalCommonShow(3,"Generate table content unsuccessfully: status = " + status);
-      }
-    }).fail(function(d) {
-      modalCommonShow(2,"Failed to generate table content: ", d);
-    }).error(function(d) {
-      modalCommonShow(1,"Error generate table content: ", d);
-    });
+      }).fail(function(d) {
+        modalCommonShow(2,"Failed to generate table content: ", d);
+      }).error(function(d) {
+        modalCommonShow(1,"Error generate table content: ", d);
+      });
+    };
+    checkCurrSessAndExec(execFunc);
   }
 
   // Set table title
   function setTabelTitle() {
-    for(i = 0; i < list_admin.length; i++) {
-      if(list_admin[i].code === currId) {
-        $("div#right-title span").html("<span class='glyphicon glyphicon-th-list'></span>&nbsp;&nbsp;"+list_admin[i].name+" ["+currId +"]");
+    for(var idx = 0; idx < list_admin.length; idx++) {
+      if(list_admin[idx].code === currId) {
+        $("div#right-title span").html("<span class='glyphicon glyphicon-th-list'></span>&nbsp;&nbsp;"+list_admin[idx].name+" ["+currId +"]");
         break;
       }
     }
@@ -362,9 +370,9 @@ $(document).ready(function(){
     );
     var startPageNo = Math.floor(currPageNo/pagePerLoad) * pagePerLoad + (currPageNo%pagePerLoad === 0 ? 0 : 1); //start page no of serial page on page selected
     var endPageNo = maxPage < (startPageNo + pagePerLoad) ? maxPage : (startPageNo + pagePerLoad -1); //end page no of serial page on page selected
-    for(i = startPageNo; i <= endPageNo; i++) {
+    for(var idx = startPageNo; idx <= endPageNo; idx++) {
       $("div#pagination ul").append(
-        "<li id='page"+i+"'"+(i === currPageNo ? " class='active' " : "")+"><a href='#'>"+i+"</a></li>"
+        "<li id='page"+idx+"'"+(idx === currPageNo ? " class='active' " : "")+"><a href='#'>"+idx+"</a></li>"
       );
     }
     $("div#pagination ul").append(
@@ -375,7 +383,7 @@ $(document).ready(function(){
 
   // Show table form
   function modalTableShow() {
-    $("#loading").show();
+    loadingStateChange("show");
     //set current row content on edit and current PK on new record
     //prepare drop down list on referential column
     //populate data and button into table form
@@ -383,27 +391,27 @@ $(document).ready(function(){
     var currRowContent = []; //current row content
     if(currBtn === 1)
       setRowContents();
-    for(i = 0; i < columns.length; i++) {
+    for(var idx = 0; idx < columns.length; idx++) {
       if(currBtn === 1)
-        currRowContent = rowContents["col"+(i+1)] === null ? "" : rowContents["col"+(i+1)];
-      columnCons = columnsCons[columns[i].columnName];
+        currRowContent = rowContents["col"+(idx+1)] === null ? "" : rowContents["col"+(idx+1)];
+      columnCons = columnsCons[columns[idx].columnName];
       setConsTypeStat();
       content +=
-        "<tr><td>"+columns[i].columnName.replace(/_/g," ")+
+        "<tr><td>"+columns[idx].columnName.replace(/_/g," ")+
         "</td><td class='admin-edit-data'>";
       if(consTypeStat["R"] === "Y") {
-        var dropDownListTemp = dropDownList[columns[i].columnName]; //drop down list temporer container
-        content += "<select class='admin-edit-data' data-type='"+columns[i].dataType+"'>";
-        for(j = 0; j < dropDownListTemp.length; j++)
-          content += "<option value='"+dropDownListTemp[j].code+"' "+
-                (currBtn === 1 && currRowContent === dropDownListTemp[j].code ? "selected" : "")+
-                ">"+dropDownListTemp[j].code+(columns[i].dataType === "NUMBER" ? " | "+dropDownListTemp[j].name : "")+"</option>";
+        var dropDownListTemp = dropDownList[columns[idx].columnName]; //drop down list temporer container
+        content += "<select class='admin-edit-data' data-type='"+columns[idx].dataType+"'>";
+        for(var idx1 = 0; idx1 < dropDownListTemp.length; idx1++)
+          content += "<option value='"+dropDownListTemp[idx1].code+"' "+
+                (currBtn === 1 && currRowContent === dropDownListTemp[idx1].code ? "selected" : "")+
+                ">"+dropDownListTemp[idx1].code+(columns[idx].dataType === "NUMBER" ? " | "+dropDownListTemp[idx1].name : "")+"</option>";
         content += "</select></td></tr>";
       } else {
         content +=
-          "<input class='admin-edit-data' type='"+(columns[i].dataType === "NUMBER" ? "number" : "text")+"' data-type='"+columns[i].dataType+"'"+
+          "<input class='admin-edit-data' type='"+(columns[idx].dataType === "NUMBER" ? "number" : "text")+"' data-type='"+columns[idx].dataType+"'"+
           (currBtn === 1 ? (" value='"+currRowContent+"'"+(consTypeStat["P"] === "Y" ? " disabled" : "")) :
-          (consTypeStat["P"] === "Y" && columns[i].dataType === "NUMBER" ? " value='"+maxId+"' disabled" : ""))+
+          (consTypeStat["P"] === "Y" && columns[idx].dataType === "NUMBER" ? " value='"+maxId+"' disabled" : ""))+
           "></td></tr>";
       }
     }
@@ -412,7 +420,7 @@ $(document).ready(function(){
             "class='glyphicon glyphicon-plus'></span>&nbsp;New Record")+" ["+currId+"]");
     $("#mdl-table #content").html(content);
     $("#mdl-table").modal("show");
-    $("#loading").hide();
+    loadingStateChange("hide");
   }
   
   // Show admin prompt message confirmation
@@ -438,9 +446,9 @@ $(document).ready(function(){
   // Set current row content
   function setRowContents() {
     rowContents = [];
-    for(i = 0; i < contents.length; i++) {
-      if(Number(contents[i].id) === Number(idRow) || contents[i].id === idRow) {
-        rowContents = contents[i];
+    for(var idx = 0; idx < contents.length; idx++) {
+      if(Number(contents[idx].id) === Number(idRow) || contents[idx].id === idRow) {
+        rowContents = contents[idx];
         break;
       }
     }
@@ -467,6 +475,61 @@ $(document).ready(function(){
       }
     });
   }
+  
+  // Loading find data based on given page number
+  function loadFindData(thisId) {
+    loadingStateChange("show");
+    $("div#mdl-find").css("opacity","0.2");
+    //set page no by item clicked/enter
+    if(thisId.indexOf("prev") > -1)
+      currPageNoFind--;
+    else if(thisId.indexOf("next") > -1)
+      currPageNoFind++;
+    else
+      currPageNoFind = 1;
+    //populate table data from database
+    //save data to angular var (read AngularJS doc to learn this) that will be used on population
+    //re-generate header
+    //show data
+    var execFunc = function() {
+      $.get("../../apps/data/table/value",{
+        tableName: currId, columnsSerialExt: columnsSerialExt, orderByColumn: orderByColumn,
+        searchText: $("#search-text").val(), currPageNoFind: currPageNoFind},
+        function(data,status) {
+        if(status === "success") {
+          var listFind = $("div#mdl-find div#content div"); //current find scope element
+          var scope = listFind.scope(); //current find scope
+          scope.dataFindList = data;
+          scope.columnsLength = columns.length;
+          scope.$apply();
+          //apply format on previous and next page find
+          if(currPageNoFind > 1) {
+            listFind.find("p span#prevPageFind")
+                    .css("cursor","pointer").css("color","blue").css("text-decoration","underline");
+          } else {
+            listFind.find("p span#prevPageFind")
+                    .css("cursor","text").css("color","black").css("text-decoration","none");
+          }
+          if(data.length > maxRecordPerPageFind) {
+            listFind.find("p span#nextPageFind")
+                    .css("cursor","pointer").css("color","blue").css("text-decoration","underline");
+          } else {
+            listFind.find("p span#nextPageFind")
+                    .css("cursor","text").css("color","black").css("text-decoration","none");
+          }
+          $("div#mdl-find").css("opacity","1");
+          loadingStateChange("hide");
+        } else {
+          modalCommonShow(3,"Loading table value json unsuccessfully: status = " + status);
+        }
+      }).fail(function(reqObj,status) {
+        modalCommonShow(2,"Failed to load table value json: ", reqObj);
+      }).error(function(reqObj,status) {
+        modalCommonShow(1,"Error loading table value json: ", reqObj);
+      });
+    };
+    checkCurrSessAndExec(execFunc);
+  }
   /* *** */
 });
   
@@ -479,6 +542,7 @@ adminApp.controller("adminCtrl", function($scope) {
   $scope.dataList = [];
   $scope.dataFindList = [];
   $scope.columnsLength = 0;
+  $scope.limitNum = 10;
   $scope.changeData = function(){
     //alert("ok");
   };

@@ -14,9 +14,7 @@
 <body>
   <div class="default-message" style="width: 60%">
     <h1>
-      <div>
-        Selamat datang di aplikasi FOCUS
-      </div>      
+      Selamat datang di aplikasi FOCUS
     </h1>
     <br/>
     <br/>
@@ -30,13 +28,19 @@
     <br/>
     <br/>
     <p>
-      <a class="btn btn-primary btn-lg" href="/FOCUS/apps/main/application">
+      <a class="btn btn-primary btn-lg" href="../../apps/main/application" style="width: 180px">
         <span class="glyphicon glyphicon-tags"></span>
-        Masuk Aplikasi
+        &nbsp;FOCUS
       </a>
+      <a class="btn btn-success btn-lg" href="../../apps/keypro/application">
+        <span class="glyphicon glyphicon-tags"></span>
+        &nbsp;KEYPRO <sup style="color: yellow"><i>New!</i></sup>
+      </a>
+    </p>
+    <p>
       <a class="btn btn-default btn-lg" href="mailto:taufik.nuhartantrio@fifgroup.astra.co.id">
         <span class="glyphicon glyphicon-pencil"></span>
-        Daftar sebagai User
+        &nbsp;Daftar sebagai User
       </a>
     </p>
   </div>

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 /**
  * Various functions which supporting this project
@@ -58,16 +59,18 @@ public class SupportUtil {
    * @param httpRequest 
    */
   public static void setSessionVariable(HttpServletRequest httpRequest) {
-    String cnname = (String) httpRequest.getSession().getAttribute("cnname");
-    if(cnname.equals("")) {
+    HttpSession session = httpRequest.getSession();
+    String cnname = (String) session.getAttribute("cnname");
+    if(cnname == null || cnname.equals("")) {
       try {
         String principal = httpRequest.getUserPrincipal().toString();
         int start = principal.indexOf("cn=");
         String tmp = principal.substring(start + 3);
         int end = tmp.indexOf(",");
         cnname = tmp.substring(0,end);
-        httpRequest.getSession().setAttribute("cnname", cnname);
-        httpRequest.getSession().setAttribute("uid", httpRequest.getUserPrincipal().getName());
+        session.setAttribute("cnname", cnname);
+        session.setAttribute("uid", httpRequest.getUserPrincipal().getName());
+        session.setAttribute("sessionid", session.getId());
       } catch(NullPointerException npe) {
         System.out.println(npe);
       }
