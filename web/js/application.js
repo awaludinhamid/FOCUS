@@ -16,6 +16,7 @@ $(document).ready(function(){
         cnt = 0; //node count
     var root, tree, diagonal, vis, tooltip, linktip, linGradRed, linGradGreen, linGradYellow, linGradBlue, linGradGrey, linGradPurple, radGrad; //tree var holder
     var rCircle = 15; //circle node radiant
+    var squareSide = 30; //square side width/length
     var lLine = 320; //hierarchy line length
     var linkTree = "";	//json file name
     var hoverFlag = 0;//avoid hover on click
@@ -59,6 +60,7 @@ $(document).ready(function(){
             $("#mdl-common #myModalLabel").html("<h3><span style='color: yellow' class='glyphicon glyphicon-exclamation-sign'>&nbsp;Warning</span></h3>");
             $("#mdl-common #content").text("Layer authorization must be set first");
             $("#mdl-common").modal("show"); 
+            loadingStateChange("hide");
             $(".app-def-position, #zoom-slider, #userMenu ul li:not('#idLogout,#idHome')").hide();
             return false;       
           }
@@ -461,6 +463,7 @@ $(document).ready(function(){
         .attr("transform", function(d) {return "translate(" + source.y0 + "," + source.x0 + ")";});
 
       //put growth value on foreignObject or text node (if IE browser) and its properties
+      var DELAY = 300, clicks = 0, timer = null;
       if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) {//If IE
         nodeEnter
           .append("svg:rect")//only for background
@@ -487,10 +490,25 @@ $(document).ready(function(){
               }})
           .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
           .attr("y", "4")
-          .attr("x", function(d) {return d.systemId === 3 ? "40" : "13";})
-          //show info by breakdown or detail depend on flag
+          //.attr("x", function(d) {return d.systemId === 3 ? "40" : "13";})
+          .attr("x", "13")
+          //show info by breakdown or detail depend on flag          
           .on("click",function(d) {
-            showInfo(root,d);
+            //$("div#map").hide("slow");
+            clicks++;  //count clicks
+            //show info by breakdown or detail depend on flag
+            if(clicks === 1) {
+              timer = setTimeout(function() {   
+                clicks = 0;             //after action performed, reset counter
+                showInfo(root,d);  //perform single-click action 
+              }, DELAY);
+            //direct to keypro
+            } else {
+              clearTimeout(timer);    //prevent single-click action
+              clicks = 0;             //after action performed, reset counter
+              if(d.systemId === 3)
+                window.open("../../apps/keypro/application?kpiId="+d.kpi,"_blank");  //perform double-click action
+            }
           });
         nodeEnter
           .append("svg:text")
@@ -498,13 +516,28 @@ $(document).ready(function(){
           .style("font-size","10px")
           .attr("fill",function(d){if(d.button == "btn btn-default btn-sm") return "black"; else return "white";})
           .attr("y", "17")
-          .attr("x", function(d) {return d.systemId === 3 ? "44" : "17";})
+          //.attr("x", function(d) {return d.systemId === 3 ? "44" : "17";})
+          .attr("x", "17")
           .style("cursor",function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
-          .on("click", function(d) {
-            showInfo(root,d);
+          .on("click",function(d) {
+            //$("div#map").hide("slow");
+            clicks++;  //count clicks
+            //show info by breakdown or detail depend on flag
+            if(clicks === 1) {
+              timer = setTimeout(function() {   
+                clicks = 0;             //after action performed, reset counter
+                showInfo(root,d);  //perform single-click action 
+              }, DELAY);
+            //direct to keypro
+            } else {
+              clearTimeout(timer);    //prevent single-click action
+              clicks = 0;             //after action performed, reset counter
+              if(d.systemId === 3)
+                window.open("../../apps/keypro/application?kpiId="+d.kpi,"_blank");  //perform double-click action
+            }
           });
         //add link to direct to key process
-        nodeEnter
+        /*nodeEnter
           .append("svg:text")
           .text(function(d) {return d.systemId === 3 ? "Link" : "";})
           .attr("fill","blue")
@@ -516,7 +549,7 @@ $(document).ready(function(){
           .on("click", function(d) {
             //window.location.replace("../../apps/keypro/application?kpiId="+d.kpi);
             window.open("../../apps/keypro/application?kpiId="+d.kpi,"_blank");
-          });
+          });*/
       } else {
         nodeEnter
           .append("svg:foreignObject")
@@ -524,7 +557,8 @@ $(document).ready(function(){
           .attr("height", "22px")
           .attr("id","foreignObject")
           .attr("y", "0em")
-          .attr("x", function(d) {return d.systemId === 3 ? "2.3em" : "1.0em";})
+          //.attr("x", function(d) {return d.systemId === 3 ? "2.3em" : "1.0em";})
+          .attr("x", "1.0em")
           .style("opacity","0.8")
           //filled object with color and icon related to its value, except root has additional color if it not in breakdown view
           .html(function(d) {
@@ -549,13 +583,25 @@ $(document).ready(function(){
             }
             return htmlElement;
           })
-          //show info by breakdown or detail depend on flag
           .on("click",function(d) {
             //$("div#map").hide("slow");
-            showInfo(root,d);
+            clicks++;  //count clicks
+            //show info by breakdown or detail depend on flag
+            if(clicks === 1) {
+              timer = setTimeout(function() {   
+                clicks = 0;             //after action performed, reset counter
+                showInfo(root,d);  //perform single-click action 
+              }, DELAY);
+            //direct to keypro
+            } else {
+              clearTimeout(timer);    //prevent single-click action
+              clicks = 0;             //after action performed, reset counter
+              if(d.systemId === 3)
+                window.open("../../apps/keypro/application?kpiId="+d.kpi,"_blank");  //perform double-click action
+            }
           });
         //add link to direct to key process
-        nodeEnter
+        /*nodeEnter
           .append("svg:foreignObject")
           .attr("width", function(d) {return d.systemId === 3 ? "20px":"0px";})
           .attr("height", function(d) {return d.systemId === 3 ? "22px":"0px";})
@@ -565,7 +611,7 @@ $(document).ready(function(){
             var iconClass = navigator.userAgent.indexOf("Chrome") === -1 ? "class='glyphicon glyphicon-link'" : "";
             var linkTxt = navigator.userAgent.indexOf("Chrome") === -1 ? "" : "&circlearrowleft;";
             return d.systemId === 3 ?
-              "<a "+iconClass+" href='../../apps/keypro/application?kpiId="+d.kpi+"' target='_blank' title='Link to process'>"+linkTxt+"</a>":"";});
+              "<a "+iconClass+" href='../../apps/keypro/application?kpiId="+d.kpi+"' target='_blank' title='Link to process'>"+linkTxt+"</a>":"";});*/
       }
       //polyline nodes and its properties
       nodeEnter.append("svg:polygon")
@@ -582,8 +628,8 @@ $(document).ready(function(){
           if(d.color === "red") return "ball-beat";
           return "";})
         //.attr("r", rCircle)
-        .attr("width","30px")
-        .attr("height","30px")
+        .attr("width",squareSide)
+        .attr("height",squareSide)
         .attr("x","-15px")
         .attr("y","-15px")
         .attr("rx",function(d){return d.systemId === 3 ? "4px" : "15px";})
@@ -816,7 +862,8 @@ $(document).ready(function(){
         var depthTemp = 0;
         setDepth(root);
         var stack = root.children.length;
-        var tempW = (rCircle+lLine)*depth;
+        //var tempW = (rCircle+lLine)*depth;
+        var tempW = (squareSide/2+lLine)*depth;
         var tempH = kpiBrkdwnFlag === 0 ? stack*(m[0]+m[2]) : stack*(m[0]+m[2])/2;
         w =  tempW > minW ? tempW : minW;
         h = tempH > minH ? tempH : minH;
