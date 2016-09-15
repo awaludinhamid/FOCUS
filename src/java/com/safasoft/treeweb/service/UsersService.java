@@ -14,7 +14,7 @@ import com.safasoft.treeweb.bean.support.UserProfileBean;
 import java.util.List;
 
 /**
- * Users model service
+ * Users service model
  * @author awal
  */
 public interface UsersService {

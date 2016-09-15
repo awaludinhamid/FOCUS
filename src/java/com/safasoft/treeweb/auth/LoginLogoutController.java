@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/auth")
 public class LoginLogoutController {
 
- protected static Logger logger = Logger.getLogger("controller");
+ private final Logger logger = Logger.getLogger("auth");
 
  /**
   * Handles and retrieves the login JSP page

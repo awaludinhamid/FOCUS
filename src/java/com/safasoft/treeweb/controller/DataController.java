@@ -5,6 +5,7 @@
 
 package com.safasoft.treeweb.controller;
 
+import com.safasoft.treeweb.bean.FfLogFocusDet;
 import com.safasoft.treeweb.bean.support.ListKpi;
 import com.safasoft.treeweb.bean.support.ListKpiHie;
 import com.safasoft.treeweb.bean.MstDts;
@@ -14,6 +15,7 @@ import com.safasoft.treeweb.bean.support.ColumnHeader;
 import com.safasoft.treeweb.bean.support.ListBean;
 import com.safasoft.treeweb.bean.support.TableValue;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
+import com.safasoft.treeweb.service.FfLogFocusDetService;
 import com.safasoft.treeweb.service.MstDtsService;
 import com.safasoft.treeweb.service.UserAccessService;
 import com.safasoft.treeweb.service.UsersService;
@@ -31,6 +33,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -57,7 +60,7 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Data controller, requested via AJAX
  * Handles and retrieves the data page depending on the URI template
- * A user must be log-in first he can access these pages
+ * A user must be login first to access these pages
  * @created Jun 19, 2015
  * @author awal
  */
@@ -65,7 +68,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/data")
 public class DataController {
 
- protected static Logger logger = Logger.getLogger("controller");
+ private final Logger logger = Logger.getLogger("controller");
  private Workbook wb;//excel object store
  private File fileDownload;//downloaded file
  private List<ListKpi> knList;//list of generated KPI
@@ -107,56 +110,84 @@ public class DataController {
          knList = usersServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],tmpArr[6],
                  mstDts.getDtsTable()+layerSuffixTable,mstDts.getDtsTableLastMonth()+layerSuffixTable);
        }
-       for(ListKpi kn : knList) {
-        ListKpiHie lkth = new ListKpiHie();
-        lkth.setId(kn.getId());
-        lkth.setParent(kn.getParent());
-        lkth.setKpi(kn.getKpi());
-        lkth.setMembers(kn.getMembers());
-        lkth.setCoy(kn.getCoy());
-        lkth.setLob(kn.getLob());
-        lkth.setKpiType(kn.getKpiType());
-        lkth.setName(kn.getName());
-        lkth.setUrl(kn.getUrl());
-        lkth.setTypeKpi(kn.getTypeKpi());
-        lkth.setSatuan(kn.getSatuan());
-        lkth.setTarget(kn.getTarget());
-        lkth.setActual(kn.getActual());
-        lkth.setAchieve(kn.getAchieve());
-        lkth.setLastMonth(kn.getLastMonth());
-        lkth.setGrowth(kn.getGrowth());
-        lkth.setBatasAtas(kn.getBatasAtas());
-        lkth.setBatasBawah(kn.getBatasBawah());
-        lkth.setColor(kn.getColor());
-        lkth.setDept(kn.getDept());
-        lkth.setButton(kn.getButton());
-        lkth.setIcon(kn.getIcon());
-        lkth.setDatePopulate(kn.getDatePopulate());
-        lkth.setSystemId(kn.getSystemId());
-        List<Integer> listJsonDel = new ArrayList<Integer>();
-        List<ListKpiHie> jsonArray = new ArrayList<ListKpiHie>();
-        for(int idxJson = 0; idxJson < listJson.size(); idxJson++) {
-          ListKpiHie json = listJson.get(idxJson);
-          if(kn.getId() == json.getParent()) {
-            json.setParentName(kn.getName());
-            jsonArray.add(json);
-            listJsonDel.add(idxJson);
-          }
+       int logParentId = (Integer) httpRequest.getSession().getAttribute("logParentId");
+       //update logging master, move app name to detail
+       /*FfLogFocusService flfService = new SessionUtil<FfLogFocusService>().getAppContext("ffLogFocusService");
+       FfLogFocus logFocus = flfService.getById(logParentId);
+       if(logFocus.getAppsName() == null || logFocus.getAppsName().equals("")) {
+         logFocus.setAppsName("FOCUS");
+         flfService.save(logFocus);
+       }*/
+       //logging detail
+       FfLogFocusDet logFocusDet = new FfLogFocusDet();
+       logFocusDet.setParentId(logParentId);
+       logFocusDet.setDtsCode(tmpArr[1]);
+       logFocusDet.setLayerCode(tmpArr[2]);
+       logFocusDet.setNodeCode(tmpArr[3]);
+       logFocusDet.setCoyId(tmpArr[4]);
+       logFocusDet.setBussUnit(tmpArr[5]);
+       DataConverter dc = new DataConverter();
+       dc.setConverter(new Date(), "dd-MMM-yyyy kk:mm:ss");
+       logFocusDet.setLoggingTime(dc.getConverter());
+       logFocusDet.setAppsName("FOCUS");
+       if(tmpArr.length == 8)
+         logFocusDet.setKpiId(Integer.parseInt(tmpArr[6]));
+       if(knList == null || knList.isEmpty()) {
+         logFocusDet.setSuccessFlag("N");
+         listJsonKpi = new ListKpiHie();
+       } else {
+        for(ListKpi kn : knList) {
+         ListKpiHie lkth = new ListKpiHie();
+         lkth.setId(kn.getId());
+         lkth.setParent(kn.getParent());
+         lkth.setKpi(kn.getKpi());
+         lkth.setMembers(kn.getMembers());
+         lkth.setCoy(kn.getCoy());
+         lkth.setLob(kn.getLob());
+         lkth.setKpiType(kn.getKpiType());
+         lkth.setName(kn.getName());
+         lkth.setUrl(kn.getUrl());
+         lkth.setTypeKpi(kn.getTypeKpi());
+         lkth.setSatuan(kn.getSatuan());
+         lkth.setTarget(kn.getTarget());
+         lkth.setActual(kn.getActual());
+         lkth.setAchieve(kn.getAchieve());
+         lkth.setLastMonth(kn.getLastMonth());
+         lkth.setGrowth(kn.getGrowth());
+         lkth.setBatasAtas(kn.getBatasAtas());
+         lkth.setBatasBawah(kn.getBatasBawah());
+         lkth.setColor(kn.getColor());
+         lkth.setDept(kn.getDept());
+         lkth.setButton(kn.getButton());
+         lkth.setIcon(kn.getIcon());
+         lkth.setDatePopulate(kn.getDatePopulate());
+         lkth.setSystemId(kn.getSystemId());
+         List<Integer> listJsonDel = new ArrayList<Integer>();
+         List<ListKpiHie> jsonArray = new ArrayList<ListKpiHie>();
+         for(int idxJson = 0; idxJson < listJson.size(); idxJson++) {
+           ListKpiHie json = listJson.get(idxJson);
+           if(kn.getId() == json.getParent()) {
+             json.setParentName(kn.getName());
+             jsonArray.add(json);
+             listJsonDel.add(idxJson);
+           }
+         }
+         for(int idxJson = listJsonDel.size()-1; idxJson >= 0; idxJson--) {
+           Integer intJson = listJsonDel.get(idxJson);
+           listJson.remove(intJson.intValue());
+         }
+         if(jsonArray.size() > 0) {
+           lkth.setChildren(jsonArray);
+         }
+         listJson.add(lkth);
         }
-        for(int idxJson = listJsonDel.size()-1; idxJson >= 0; idxJson--) {
-          Integer intJson = listJsonDel.get(idxJson);
-          listJson.remove(intJson.intValue());
-        }
-        if(jsonArray.size() > 0) {
-          lkth.setChildren(jsonArray);
-        }
-        listJson.add(lkth);
-       }
+        //only last element would be returned
+        listJsonKpi = listJson.get(listJson.size()-1);
+       }       
+       new SessionUtil<FfLogFocusDetService>().getAppContext("ffLogFocusDetService").save(logFocusDet);
     } catch(Exception x) {
       logger.error(x);
     }
-    //only last element would be returned
-    listJsonKpi = listJson.get(listJson.size()-1);
     return listJsonKpi;
   }
 

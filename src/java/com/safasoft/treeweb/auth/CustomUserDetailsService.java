@@ -35,11 +35,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CustomUserDetailsService implements UserDetailsService {
 
-  protected static Logger logger = Logger.getLogger("service");
+  private final Logger logger = Logger.getLogger("service");
 
   /**
   * Retrieves a user record containing the user's credentials and access.
+   * @param username
+   * @return 
   */
+  @Override
   public UserDetails loadUserByUsername(String username)
       throws UsernameNotFoundException, DataAccessException {
 
@@ -113,6 +116,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
   /**
   * Simulates retrieval of data from a database.
+   * @param username
+   * @return 
   */
   public Users searchDatabase(String username) {
 

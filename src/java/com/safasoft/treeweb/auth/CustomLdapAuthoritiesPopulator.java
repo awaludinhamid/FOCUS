@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CustomLdapAuthoritiesPopulator implements LdapAuthoritiesPopulator {
 
-  protected static Logger logger = Logger.getLogger("service");
+  private final Logger logger = Logger.getLogger("auth");
 
        /**
         * Attach authority to logged user from database

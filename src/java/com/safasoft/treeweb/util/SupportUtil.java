@@ -13,8 +13,6 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 /**
  * Various functions which supporting this project
@@ -52,29 +50,6 @@ public class SupportUtil {
     symbols.setGroupingSeparator(separator);
     formatter.setDecimalFormatSymbols(symbols);
     return formatter.format(number);
-  }
-    
-  /**
-   * Creation of session variable especially user id and user display
-   * @param httpRequest 
-   */
-  public static void setSessionVariable(HttpServletRequest httpRequest) {
-    HttpSession session = httpRequest.getSession();
-    String cnname = (String) session.getAttribute("cnname");
-    if(cnname == null || cnname.equals("")) {
-      try {
-        String principal = httpRequest.getUserPrincipal().toString();
-        int start = principal.indexOf("cn=");
-        String tmp = principal.substring(start + 3);
-        int end = tmp.indexOf(",");
-        cnname = tmp.substring(0,end);
-        session.setAttribute("cnname", cnname);
-        session.setAttribute("uid", httpRequest.getUserPrincipal().getName());
-        session.setAttribute("sessionid", session.getId());
-      } catch(NullPointerException npe) {
-        System.out.println(npe);
-      }
-    }
   }
 
   //transform list of value into flat text

@@ -6,7 +6,6 @@
 
 package com.safasoft.treeweb.controller;
 
-import com.safasoft.treeweb.util.SupportUtil;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
@@ -14,6 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
+ * Page controller
+ * Handles and retrieves various page depending on the URI template.
+ * A user must be login first to access these pages.
  * @created Dec 9, 2015
  * @author awal
  */
@@ -21,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @RequestMapping("/keypro")
 public class MainControllerKeypro {
 
- protected static Logger logger = Logger.getLogger("controller");
+ private final Logger logger = Logger.getLogger("controller");
 
   /**
    * Handles and retrieve KEYPRO page
@@ -31,8 +33,6 @@ public class MainControllerKeypro {
   @RequestMapping(value="/application", method=RequestMethod.GET)
   public String getKeyproPage(HttpServletRequest httpRequest) {
     logger.debug("Received request to show keypro page");
-    //retrieve current user info
-    SupportUtil.setSessionVariable(httpRequest);
     return "keypro/application";
   }
 
@@ -44,8 +44,6 @@ public class MainControllerKeypro {
   @RequestMapping(value="/jobview", method=RequestMethod.GET)
   public String getJobviewPage(HttpServletRequest httpRequest) {
     logger.debug("Received request to show jobview page");
-     //retrieve current user info
-     SupportUtil.setSessionVariable(httpRequest);
     return "keypro/jobview";
   }
 }

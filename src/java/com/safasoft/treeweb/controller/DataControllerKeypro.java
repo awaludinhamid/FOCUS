@@ -6,6 +6,7 @@
 
 package com.safasoft.treeweb.controller;
 
+import com.safasoft.treeweb.bean.FfLogFocusDet;
 import com.safasoft.treeweb.bean.support.ColumnProp;
 import com.safasoft.treeweb.bean.support.ListKpiKeypro;
 import com.safasoft.treeweb.bean.support.KpiColumn;
@@ -14,11 +15,15 @@ import com.safasoft.treeweb.bean.support.ListKpiHieKeypro;
 import com.safasoft.treeweb.bean.support.ListProp;
 import com.safasoft.treeweb.bean.support.SubmitJobContent;
 import com.safasoft.treeweb.bean.support.TableContentKeypro;
+import com.safasoft.treeweb.service.FfLogFocusDetService;
 import com.safasoft.treeweb.service.FfSubmitJobService;
 import com.safasoft.treeweb.service.SupportService;
+import com.safasoft.treeweb.util.DataConverter;
 import com.safasoft.treeweb.util.SessionUtil;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +34,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 /**
  * Data controller on KEYPRO project, requested via AJAX
  * Handles and retrieves the data page depending on the URI template
- * A user must be log-in first he can access these pages
+ * A user must be login first to access these pages
  * @created Dec 9, 2015
  * @author awal
  */
@@ -37,18 +42,19 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping("/keypro/data")
 public class DataControllerKeypro {
 
-  protected static Logger logger = Logger.getLogger("controller");
+  private final Logger logger = Logger.getLogger("controller");
   private static final String COLUMN_DELIMITER = ","; //default column delimiter
   private static final int MAX_COLUMN_DATA = 60; //maximum column data amount
   
   /**
    * Generate requested KPI data
    * @param parentKpi
+   * @param httpRequest
    * @return kpi data through json
    */
   @RequestMapping(value="/kpi", method=RequestMethod.GET)
   public @ResponseBody ListKpiHieKeypro getListKpi(
-          @RequestParam("parentKpi") Integer parentKpi
+          @RequestParam("parentKpi") Integer parentKpi, HttpServletRequest httpRequest
     ) {
     logger.debug("Received request to get KPI data");
     List<ListKpiHieKeypro> listJson = new ArrayList<ListKpiHieKeypro>();
@@ -56,32 +62,46 @@ public class DataControllerKeypro {
     try {
       SupportService supportServ =
                new SessionUtil<SupportService>().getAppContext("supportService");
-      //List<ListKpiKeypro> listKpi = supportServ.getListKpi(parentKpi);
-      for(ListKpiKeypro kn : supportServ.getListKpi(parentKpi)) {
-        ListKpiHieKeypro lkh = new ListKpiHieKeypro();
-        lkh.setKpiId(kn.getKpiId());
-        lkh.setParentId(kn.getParentId());
-        lkh.setKpiName(kn.getKpiName());
-        lkh.setFactName(kn.getFactName());
-        lkh.setColor(kn.getColor());
-        List<Integer> listJsonDel = new ArrayList<Integer>();
-        List<ListKpiHieKeypro> jsonArray = new ArrayList<ListKpiHieKeypro>();
-        for(int idxJson = 0; idxJson < listJson.size(); idxJson++) {
-          ListKpiHieKeypro json = listJson.get(idxJson);
-          if(kn.getKpiId() == json.getParentId()) {
-            jsonArray.add(json);
-            listJsonDel.add(idxJson);
+      List<ListKpiKeypro> listKpi = supportServ.getListKpi(parentKpi);
+      //logging detail
+      int logParentId = (Integer) httpRequest.getSession().getAttribute("logParentId");
+      FfLogFocusDet logFocusDet = new FfLogFocusDet();
+      logFocusDet.setParentId(logParentId);
+      DataConverter dc = new DataConverter();
+      dc.setConverter(new Date(), "dd-MMM-yyyy kk:mm:ss");
+      logFocusDet.setLoggingTime(dc.getConverter());
+      logFocusDet.setAppsName("KEYPRO");
+      if(listKpi == null || listKpi.isEmpty()) {
+        logFocusDet.setSuccessFlag("N");
+        listJson = new ArrayList<ListKpiHieKeypro>();
+      } else {
+        for(ListKpiKeypro kn : listKpi) {
+          ListKpiHieKeypro lkh = new ListKpiHieKeypro();
+          lkh.setKpiId(kn.getKpiId());
+          lkh.setParentId(kn.getParentId());
+          lkh.setKpiName(kn.getKpiName());
+          lkh.setFactName(kn.getFactName());
+          lkh.setColor(kn.getColor());
+          List<Integer> listJsonDel = new ArrayList<Integer>();
+          List<ListKpiHieKeypro> jsonArray = new ArrayList<ListKpiHieKeypro>();
+          for(int idxJson = 0; idxJson < listJson.size(); idxJson++) {
+            ListKpiHieKeypro json = listJson.get(idxJson);
+            if(kn.getKpiId() == json.getParentId()) {
+              jsonArray.add(json);
+              listJsonDel.add(idxJson);
+            }
           }
+          for(int idxJson = listJsonDel.size()-1; idxJson >= 0; idxJson--) {
+            Integer intJson = listJsonDel.get(idxJson);
+            listJson.remove(intJson.intValue());
+          }
+          if(jsonArray.size() > 0) {
+            lkh.setChildren(jsonArray);
+          }
+          listJson.add(lkh);
         }
-        for(int idxJson = listJsonDel.size()-1; idxJson >= 0; idxJson--) {
-          Integer intJson = listJsonDel.get(idxJson);
-          listJson.remove(intJson.intValue());
-        }
-        if(jsonArray.size() > 0) {
-          lkh.setChildren(jsonArray);
-        }
-        listJson.add(lkh);
-       }
+      }
+      new SessionUtil<FfLogFocusDetService>().getAppContext("ffLogFocusDetService").save(logFocusDet);
     } catch(Exception x) {
       logger.error(x);
     }

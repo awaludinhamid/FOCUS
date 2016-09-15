@@ -5,7 +5,6 @@
 
 package com.safasoft.treeweb.controller;
 
-import com.safasoft.treeweb.util.SupportUtil;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
@@ -15,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 /**
  * Page controller
  * Handles and retrieves various page depending on the URI template.
- * A user must be log-in first he can access these pages.
+ * A user must be login first to access these pages.
  * Specific page can be accessed by specific user, however.
  * @created Jun 19, 2015
  * @author awal
@@ -24,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @RequestMapping("/main")
 public class MainController {
 
- protected static Logger logger = Logger.getLogger("controller");
+ private final Logger logger = Logger.getLogger("controller");
 
 
  /**
@@ -36,8 +35,6 @@ public class MainController {
     @RequestMapping(value = "/application", method = RequestMethod.GET)
     public String getAppPage(HttpServletRequest httpRequest) {
      logger.debug("Received request to show app page");
-     //retrieve current user info
-     SupportUtil.setSessionVariable(httpRequest);
      // This will resolve to /jsp/applicationpage.jsp
      return "applicationpage";
  }
@@ -51,8 +48,6 @@ public class MainController {
     @RequestMapping(value = "/home", method = RequestMethod.GET)
     public String getHomePage(HttpServletRequest httpRequest) {
      logger.debug("Received request to show home page");
-     //retrieve current user info
-     SupportUtil.setSessionVariable(httpRequest);
      // This will resolve to /jsp/homepage.jsp
      return "homepage";
  }
@@ -66,8 +61,6 @@ public class MainController {
     @RequestMapping(value = "/admin", method = RequestMethod.GET)
     public String getAdminPage(HttpServletRequest httpRequest) {
      logger.debug("Received request to show admin page");
-     //retrieve current user info
-     SupportUtil.setSessionVariable(httpRequest);
      // This will resolve to /jsp/adminpage.jsp
      return "adminpage";
  }
@@ -81,8 +74,6 @@ public class MainController {
     @RequestMapping(value = "/upload", method = RequestMethod.GET)
     public String getUploadPage(HttpServletRequest httpRequest) {
      logger.debug("Received request to show upload page");
-     //retrieve current user info
-     SupportUtil.setSessionVariable(httpRequest);
      // This will resolve to /jsp/uploadpage.jsp
      return "uploadpage";
  }
@@ -96,8 +87,6 @@ public class MainController {
     @RequestMapping(value = "/error", method = RequestMethod.GET)
     public String getErrorPage(HttpServletRequest httpRequest) {
      logger.debug("Received request to show error page");
-     //retrieve current user info
-     SupportUtil.setSessionVariable(httpRequest);
      // This will resolve to /jsp/errorpage.jsp
      return "errorpage";
     }

@@ -35,15 +35,16 @@
     login-page="/apps/auth/login"
     authentication-failure-url="/apps/auth/login?error=true"
     login-processing-url="/apps/auth/security"
-    default-target-url="/apps/main/home"/>
+    default-target-url="/apps/main/home"
+    authentication-success-handler-ref="customAuthenticationSuccessHandler"/>
 
   <security:logout
     invalidate-session="true"
-    logout-success-url="/apps/auth/login"
-    logout-url="/apps/auth/logout"/>
+    logout-url="/apps/auth/logout"
+    logout-success-url="/apps/auth/login"/>
 
  </security:http>
-
+ 
  <!--
    For authentication:
    user-search-filter: the attribute name that contains the user name
@@ -62,7 +63,7 @@
 
 <!-- ************************ LDAP + DB AUTHENTICATION ********************************* -->
 
-  <!-- local -->
+  <!-- local 
   <bean id="contextSource"
           class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
     <constructor-arg value="ldap://localhost:10389/o=safasoft"/>
@@ -75,8 +76,8 @@
     <constructor-arg index="1" value="(uid={0})"/>
     <constructor-arg index="2" ref="contextSource" />
   </bean>
-  
-  <!-- FIF 
+  -->
+  <!-- FIF -->
   <bean id="contextSource"
           class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
     <constructor-arg value="ldap://fif.co.id:389/dc=fif,dc=co,dc=id"/>
@@ -89,7 +90,7 @@
     <constructor-arg index="1" value="(&amp;(objectClass=user)(sAMAccountName={0}))"/>
     <constructor-arg index="2" ref="contextSource" />
   </bean>
-  -->
+  
   <bean id="ldapAuthProvider"
       class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
     <constructor-arg>
