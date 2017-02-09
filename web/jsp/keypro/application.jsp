@@ -21,6 +21,9 @@
     <div class="center-back-pos back-def-style"></div>
     <div class="right-back-pos back-def-style" hidden></div>
     <div class="menu-anime"></div>
+    <div id="div-collapse">      
+      <button><span class="glyphicon glyphicon-resize-small"></span>&nbsp;<span>Collapse All</span></button>
+    </div>
     <div class="menu-back-pos" hidden></div>
     <div id="btn-menu" class="menu-front-pos" hidden>
       <ul class="list-inline">
@@ -134,7 +137,8 @@
             </h4>
           </div>
           <div class="modal-body">
-            <p>Do you want to create a file?</p>
+            <p><span style="font-weight: bold">Do you want to create the following file?</span></p>
+            <label>Filename&nbsp;</label><input style="width: 400px"><span style="font-size: 10px; font-style: italic">&nbsp(type to change)</span>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-danger" data-dismiss="modal">NO</button>

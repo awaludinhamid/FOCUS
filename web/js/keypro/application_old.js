@@ -35,8 +35,7 @@ $(document).ready(function(){
       currOptPageNo = 1, //page no of table option to show on paging
       currColumnCode, //column code of current option
       maxColSize = 60, //maximum column size for all tables
-      currParentKpi = 0, //current parent kpi to load
-      fileName = "";  //nama file yg akan dibentuk
+      currParentKpi = 0; //current parent kpi to load
   //
   var currPageNoProg = 1, //page no of progress table to show on paging
       currMaxPageProg; //maximum page of progress table
@@ -191,13 +190,6 @@ $(document).ready(function(){
   //Click on button created file
   $("button#btn-download").on("click", function() {
     //show confirmation
-    var date = new Date();
-    fileName = "kpi_"+
-            $("div#kpi-option>ul>li#selectkpi>span").text().trim().replace(/\s/g,"_").replace(/\W/,"").toLowerCase()+
-            "_"+date.getFullYear()+""+padZero(date.getMonth()+1,2)+""+padZero(date.getDate(),2)+
-            "_"+padZero(date.getHours(),2)+""+padZero(date.getMinutes(),2)+""+padZero(date.getSeconds(),2)+
-            "_"+uid;
-    $("div#mdl-confirm-create-file>.modal-dialog>.modal-content>.modal-body>input").val(fileName);
     $("div#mdl-confirm-create-file").modal("show");
   });
     
@@ -205,7 +197,13 @@ $(document).ready(function(){
   $("div#mdl-confirm-create-file div.modal-footer>button#btn-yes").on("click", function() {
     //init file name
     //prepare column selection original statement (without transform to text), column selection statement (with tranform to text) and sql query
-    fileName = $("div#mdl-confirm-create-file>.modal-dialog>.modal-content>.modal-body>input").val() + ".csv";
+    var date = new Date();
+    var fileName = "kpi_"+
+            $("div#kpi-option>ul>li#selectkpi>span").text().trim().replace(/\s/g,"_").replace(/\W/,"").toLowerCase()+
+            "_"+date.getFullYear()+""+padZero(date.getMonth()+1,2)+""+padZero(date.getDate(),2)+
+            "_"+padZero(date.getHours(),2)+""+padZero(date.getMinutes(),2)+""+padZero(date.getSeconds(),2)+
+            "_"+uid+
+            ".csv";
     var columnSelectOrig = "";
     var columnSelect = "";
     var delimiter = ",";
@@ -435,7 +433,7 @@ $(document).ready(function(){
     loadingStateChangeAlt("show");
     var execFunc = function() {
       $.get("../../apps/keypro/data/kpicolumn",{kpiId: currKpiId, pageNo: currOptPageNo},function(data,status) {
-        if(status == "success" && data !== null && !jQuery.isEmptyObject(data)) {
+        if(status == "success") {
           //init data, generate and add main and addition option list
           $("div#main-option ul").remove();
           $("div#addition-option>table tr td").remove();
@@ -611,7 +609,7 @@ $(document).ready(function(){
   function showJson(kpiIdTemp) {
     var execFunc = function() {
       $.get("../../apps/keypro/data/kpi",{parentKpi: currParentKpi},function(data,status) {
-        if(status == "success" && data !== null && !jQuery.isEmptyObject(data)) {
+        if(status == "success") {
           //kpi initialization
           var initKpi;
           if(kpiIdTemp === "") {

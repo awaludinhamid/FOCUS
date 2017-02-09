@@ -146,3 +146,25 @@ div#search-list ul label, div#search-list ul input {
 div#mdl-show-progress div.modal-dialog {
   width: 870px;
 }
+
+/* collapse */
+#div-collapse {
+  position: fixed;
+  top: 55px;
+  left: 5px;
+  z-index: 10;
+}
+#div-collapse button {
+  position: absolute;
+  font-size: 15px;
+  color: white;
+  background-color: #f73;
+  border-radius: 4px;
+  padding: 2px 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+#div-collapse button:hover {
+  background-color: #159;
+  transform: translate(2px,2px);
+}

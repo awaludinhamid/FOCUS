@@ -134,8 +134,7 @@
             </h4>
           </div>
           <div class="modal-body">
-            <p><span style="font-weight: bold">Do you want to create the following file?</span></p>
-            <label>Filename&nbsp;</label><input style="width: 400px"><span style="font-size: 10px; font-style: italic">&nbsp(type to change)</span>
+            <p>Do you want to create a file?</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-danger" data-dismiss="modal">NO</button>
