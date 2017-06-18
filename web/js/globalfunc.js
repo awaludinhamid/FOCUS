@@ -19,6 +19,27 @@
     }
   }
 
+  //create list on pComp with new member pCode and pName
+  //if pFirstStat is true then show item, otherwise hide it
+  //pArrObj in form of [{objName:"aaaa",objVal:"bbbb"},{objName:"xxxx",objVal:"yyyy"},...]
+  function createListWithAddData(pComp,pCode,pName,pFirstStat,pArrObj) {
+    var dataStr = "";
+    $.each(pArrObj,function(idx,val) {
+      dataStr += " data-"+val.objName+"='"+val.objVal+"'";
+    });
+    if(pFirstStat) {
+      $("#"+pComp).append("<li id='"+pCode+"'>"+
+        "<span id='span"+pCode+"' style='text-align: left'"+dataStr+">&nbsp;&nbsp;"+
+        breakLongText(pName)+"</span></li>");
+      $("#"+pComp+" #span"+pCode).attr("class",pickStyle);//.css("background-color",bkColPick);
+    } else {
+      $("#"+pComp).append("<li id='"+pCode+"' style='display: none'"+dataStr+">"+
+        "<span id='span"+pCode+"' style='text-align: left'>&nbsp;&nbsp;"+
+        breakLongText(pName)+"</span></li>");
+      $("#"+pComp+" #span"+pCode).attr("class",unpickStyle);//.css("background-color",bkColUnpick);
+    }
+  }
+
   //toggle display and icon's list on pComp, except pFirstId only toggle its icon
   function toggleList(pComp,pFirstId) {
     $("#"+pComp+" li#"+pFirstId+" span").removeClass(btnDefault).addClass(btnPrimary);//.css("background-color",bkColPick);
@@ -64,8 +85,14 @@
     if(suffix == null) suffix = "";
     if(prefix == null) prefix = "";
     var parts = x.toString().split(".");
+    //if((x > 0 && x < 1) || (x < 0 && x > -1)) parts[0] = "0" + parts[0];
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return prefix+parts.join(".")+suffix;
+    var result = parts.join(".");
+    if(result.substring(0,2) === "-.")
+      result = result.replace("-.","-0.");
+    if(result.substring(0,1) === ".")
+      result = result.replace(".","0.");
+    return prefix+result+suffix;
   }
 
   //show modal info with message 'content' and object reqObjTemp
@@ -103,6 +130,8 @@
         content += "The number of upload file column less than table column";
       } else if(message.indexOf("ORA-00913") > -1) {
         content += "The number of upload file column more than table column";
+      } else if(message.indexOf("java.lang.OutOfMemoryError") > -1) {
+        content += "Currently you upload a big file or server received too much connections"
       } else if(message.indexOf("ORA-01722") > -1 || message.indexOf("ORA-00932") > -1 || message.indexOf("ORA-01858")) {
         content += "Datatype of file and table column mismatch or connection have been reset";  
       } else if(message.indexOf("InvalidFormatException") > -1 || message.indexOf("InvocationTargetException") > -1) {

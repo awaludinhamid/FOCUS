@@ -67,6 +67,39 @@ public class ListKpi implements Serializable {
   private String datePopulate;
   @Column(name="SYSTEM_ID")
   private int systemId;
+  
+  @Column(name="COLOR_A")
+  private String colorA;
+  @Column(name="COLOR_B")
+  private String colorB;
+  @Column(name="COLOR_C")
+  private String colorC;
+  @Column(name="COLOR_D")
+  private String colorD;
+  @Column(name="COLOR_E")
+  private String colorE;
+  @Column(name="COLOR_ICON")
+  private String colorIcon;
+  @Column(name="COLOR_ICON_IN")
+  private String colorIconIn;
+  @Column(name="ICON_IN")
+  private String iconIn;
+  @Column(name="COLOR_SQUARE")
+  private String colorSquare;
+  @Column(name="COLOR_SQUARE_IN")
+  private String colorSquareIn;
+  @Column(name="SPEED_A")
+  private String speedA;
+  @Column(name="SPEED_B")
+  private String speedB;
+  @Column(name="ACHIEVE_LAST_MONTH")
+  private Double achieveLastMonth;
+  @Column(name="PROYEKSI")
+  private Double proyeksi;
+  @Column(name="ACTUAL_BEFORE_YEST")
+  private Double actualBeforeYest;
+  @Column(name="ACHIEVE_PROYEKSI")
+  private Double achieveProyeksi;
 
   /**
    * @return the ID
@@ -402,6 +435,230 @@ public class ListKpi implements Serializable {
    */
   public void setSystemId(int systemId) {
     this.systemId = systemId;
+  }
+
+  /**
+   * @return the colorSquare
+   */
+  public String getColorSquare() {
+    return colorSquare;
+  }
+
+  /**
+   * @param colorSquare the colorSquare to set
+   */
+  public void setColorSquare(String colorSquare) {
+    this.colorSquare = colorSquare;
+  }
+
+  /**
+   * @return the iconIn
+   */
+  public String getIconIn() {
+    return iconIn;
+  }
+
+  /**
+   * @param iconIn the iconIn to set
+   */
+  public void setIconIn(String iconIn) {
+    this.iconIn = iconIn;
+  }
+
+  /**
+   * @return the colorA
+   */
+  public String getColorA() {
+    return colorA;
+  }
+
+  /**
+   * @param colorA the colorA to set
+   */
+  public void setColorA(String colorA) {
+    this.colorA = colorA;
+  }
+
+  /**
+   * @return the colorB
+   */
+  public String getColorB() {
+    return colorB;
+  }
+
+  /**
+   * @param colorB the colorB to set
+   */
+  public void setColorB(String colorB) {
+    this.colorB = colorB;
+  }
+
+  /**
+   * @return the colorC
+   */
+  public String getColorC() {
+    return colorC;
+  }
+
+  /**
+   * @param colorC the colorC to set
+   */
+  public void setColorC(String colorC) {
+    this.colorC = colorC;
+  }
+
+  /**
+   * @return the colorD
+   */
+  public String getColorD() {
+    return colorD;
+  }
+
+  /**
+   * @param colorD the colorD to set
+   */
+  public void setColorD(String colorD) {
+    this.colorD = colorD;
+  }
+
+  /**
+   * @return the colorE
+   */
+  public String getColorE() {
+    return colorE;
+  }
+
+  /**
+   * @param colorE the colorE to set
+   */
+  public void setColorE(String colorE) {
+    this.colorE = colorE;
+  }
+
+  /**
+   * @return the colorIcon
+   */
+  public String getColorIcon() {
+    return colorIcon;
+  }
+
+  /**
+   * @param colorIcon the colorIcon to set
+   */
+  public void setColorIcon(String colorIcon) {
+    this.colorIcon = colorIcon;
+  }
+
+  /**
+   * @return the colorIconIn
+   */
+  public String getColorIconIn() {
+    return colorIconIn;
+  }
+
+  /**
+   * @param colorIconIn the colorIconIn to set
+   */
+  public void setColorIconIn(String colorIconIn) {
+    this.colorIconIn = colorIconIn;
+  }
+
+  /**
+   * @return the colorSquareIn
+   */
+  public String getColorSquareIn() {
+    return colorSquareIn;
+  }
+
+  /**
+   * @param colorSquareIn the colorSquareIn to set
+   */
+  public void setColorSquareIn(String colorSquareIn) {
+    this.colorSquareIn = colorSquareIn;
+  }
+
+  /**
+   * @return the speedA
+   */
+  public String getSpeedA() {
+    return speedA;
+  }
+
+  /**
+   * @param speedA the speedA to set
+   */
+  public void setSpeedA(String speedA) {
+    this.speedA = speedA;
+  }
+
+  /**
+   * @return the speedB
+   */
+  public String getSpeedB() {
+    return speedB;
+  }
+
+  /**
+   * @param speedB the speedB to set
+   */
+  public void setSpeedB(String speedB) {
+    this.speedB = speedB;
+  }
+
+  /**
+   * @return the achieveLastMonth
+   */
+  public Double getAchieveLastMonth() {
+    return achieveLastMonth;
+  }
+
+  /**
+   * @param achieveLastMonth the achieveLastMonth to set
+   */
+  public void setAchieveLastMonth(Double achieveLastMonth) {
+    this.achieveLastMonth = achieveLastMonth;
+  }
+
+  /**
+   * @return the proyeksi
+   */
+  public Double getProyeksi() {
+    return proyeksi;
+  }
+
+  /**
+   * @param proyeksi the proyeksi to set
+   */
+  public void setProyeksi(Double proyeksi) {
+    this.proyeksi = proyeksi;
+  }
+
+  /**
+   * @return the actualBeforeYest
+   */
+  public Double getActualBeforeYest() {
+    return actualBeforeYest;
+  }
+
+  /**
+   * @param actualBeforeYest the actualBeforeYest to set
+   */
+  public void setActualBeforeYest(Double actualBeforeYest) {
+    this.actualBeforeYest = actualBeforeYest;
+  }
+
+  /**
+   * @return the achieveProyeksi
+   */
+  public Double getAchieveProyeksi() {
+    return achieveProyeksi;
+  }
+
+  /**
+   * @param achieveProyeksi the achieveProyeksi to set
+   */
+  public void setAchieveProyeksi(Double achieveProyeksi) {
+    this.achieveProyeksi = achieveProyeksi;
   }
 
 }

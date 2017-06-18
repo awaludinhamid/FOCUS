@@ -12,10 +12,11 @@ import com.safasoft.treeweb.bean.MstDts;
 import com.safasoft.treeweb.bean.support.TableContent;
 import com.safasoft.treeweb.bean.UserAccess;
 import com.safasoft.treeweb.bean.support.ColumnHeader;
-import com.safasoft.treeweb.bean.support.ListBean;
 import com.safasoft.treeweb.bean.support.TableValue;
+import com.safasoft.treeweb.bean.support.UploadTableBean;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import com.safasoft.treeweb.service.FfLogFocusDetService;
+import com.safasoft.treeweb.service.GenericService;
 import com.safasoft.treeweb.service.MstDtsService;
 import com.safasoft.treeweb.service.UserAccessService;
 import com.safasoft.treeweb.service.UsersService;
@@ -49,6 +50,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,11 +72,15 @@ import org.springframework.web.multipart.MultipartFile;
 public class DataController {
 
  private final Logger logger = Logger.getLogger("controller");
+ private final String defaultSchema = "FIF_FOCUS";//default schema when connected to database
  private Workbook wb;//excel object store
  private File fileDownload;//downloaded file
  private List<ListKpi> knList;//list of generated KPI
  private ListKpiHie listJsonKpi;//list of generated KPI with hierarchy
  private String jsonName;//json parameter sent by front end apps
+ 
+ @Autowired
+ private GenericService genServ;
 
  /**
   * Generate requested KPI data
@@ -104,10 +111,10 @@ public class DataController {
        MstDts mstDts = mdServ.getByCode(tmpArr[1]);
        String layerSuffixTable = "";//"_"+tmpArr[2].toUpperCase();
        if(tmpArr.length == 7) {
-         knList = usersServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],
+         knList = /*usersServ*/genServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],
                  mstDts.getDtsTable()+layerSuffixTable,mstDts.getDtsTableLastMonth()+layerSuffixTable);
        } else {
-         knList = usersServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],tmpArr[6],
+         knList = /*usersServ*/genServ.getListKpi(tmpArr[2],tmpArr[3],tmpArr[4],tmpArr[5],tmpArr[6],
                  mstDts.getDtsTable()+layerSuffixTable,mstDts.getDtsTableLastMonth()+layerSuffixTable);
        }
        int logParentId = (Integer) httpRequest.getSession().getAttribute("logParentId");
@@ -138,7 +145,8 @@ public class DataController {
        } else {
         for(ListKpi kn : knList) {
          ListKpiHie lkth = new ListKpiHie();
-         lkth.setId(kn.getId());
+         BeanUtils.copyProperties(kn, lkth);
+         /*lkth.setId(kn.getId());
          lkth.setParent(kn.getParent());
          lkth.setKpi(kn.getKpi());
          lkth.setMembers(kn.getMembers());
@@ -161,7 +169,7 @@ public class DataController {
          lkth.setButton(kn.getButton());
          lkth.setIcon(kn.getIcon());
          lkth.setDatePopulate(kn.getDatePopulate());
-         lkth.setSystemId(kn.getSystemId());
+         lkth.setSystemId(kn.getSystemId());*/
          List<Integer> listJsonDel = new ArrayList<Integer>();
          List<ListKpiHie> jsonArray = new ArrayList<ListKpiHie>();
          for(int idxJson = 0; idxJson < listJson.size(); idxJson++) {
@@ -267,10 +275,14 @@ public class DataController {
     logger.debug("Received request to get page no");
     //grab table, columns, order by clause, and record id
     String tableName = httpRequest.getParameter("tableName");
+    String schemaName = httpRequest.getParameter("schemaName");
+    String dbLink = httpRequest.getParameter("dbLink");
+    String fullTableName = (schemaName == null ? defaultSchema : schemaName) + "." + tableName + 
+                        (dbLink == null ? "" : "@" + dbLink);
     String columnsSerialExt = httpRequest.getParameter("columnsSerialExt");
     String orderByColumn = httpRequest.getParameter("orderByColumn");
     String id = httpRequest.getParameter("id");
-    return new SessionUtil<UsersService>().getAppContext("usersService").getPageNo(tableName,id,columnsSerialExt,orderByColumn);
+    return new SessionUtil<UsersService>().getAppContext("usersService").getPageNo(fullTableName,id,columnsSerialExt,orderByColumn);
   }
 
   /**
@@ -300,17 +312,22 @@ public class DataController {
     logger.debug("Received request to upload file");
     //grab table and columns
     String tableName = httpRequest.getParameter("tableName");
+    String schemaName = httpRequest.getParameter("schemaName");
+    String dbLink = httpRequest.getParameter("dbLink");
+    String fullTableName = (schemaName == null ? defaultSchema : schemaName) + "." + tableName + 
+                        (dbLink == null ? "" : "@" + dbLink);
     String columnsSerial = httpRequest.getParameter("columnsSerial");
     DataConverter dc = new DataConverter();
     UsersService usersServ =
                 new SessionUtil<UsersService>().getAppContext("usersService");
     //flush table before insert
-    usersServ.saveTable("TRUNCATE TABLE " + tableName + " DROP STORAGE");
+    usersServ.saveTable("DELETE FROM TABLE " + fullTableName);
     //convert excel object into SQL statement
     Sheet sheet = wb.getSheetAt(0);
     for(Row row : sheet) {
       if(row != null) {
-        StringBuilder sb = new StringBuilder("INSERT INTO " + tableName + " ("+columnsSerial+") VALUES (");
+        StringBuilder sb = new StringBuilder(
+                "INSERT INTO " + fullTableName + " ("+columnsSerial+") VALUES (");
         for(Cell cell : row) {
           switch(cell.getCellType()) {
             case Cell.CELL_TYPE_STRING:
@@ -403,7 +420,7 @@ public class DataController {
   * @return json data
   */
   @RequestMapping(value = "/upload/access", method = RequestMethod.GET)
-  public @ResponseBody List<ListBean> getUploadTableAccess(HttpServletRequest httpRequest) {
+  public @ResponseBody List<UploadTableBean> getUploadTableAccess(HttpServletRequest httpRequest) {
     logger.debug("Received request to get uploaded file access");
     //grab table
     String uid = httpRequest.getParameter("uid");

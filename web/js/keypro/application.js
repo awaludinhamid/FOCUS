@@ -9,15 +9,15 @@ $(document).ready(function(){
    
   /* VARIABLE DECLARATION */
   //
-  var m = [100, 80, 100, 80], //svg padding to tree(up,left,down,right)
-      minW = 1360, //min tree diagram width
-      minH = 768, //min tree diagram height
+  var m = [80, 120, 20, 220], //svg padding to tree(up,left,down,right)
+      minW = 2040, //min tree diagram width
+      minH = 1020, //min tree diagram height
       w = 0, //tree diagram width
       h = 0, //tree diagram height
       cnt = 0; //node count
   var root, tree, diagonal, vis, tooltip, linktip, linGradRed, linGradGreen, linGradYellow, linGradCyan, linGradGrey, radGrad; //tree var holder
-  var rCircle = 15; //circle node radiant
-  var lLine = 320; //hierarchy line length
+  var rCircle = 10, //circle node radiant
+      radius = 600; //radial radius
   //
   var includeColumn = []; //storage of picked column to proceed
   var currKpiId, //current KPI
@@ -663,8 +663,6 @@ $(document).ready(function(){
     //clean tree contanier
     d3.selectAll("#body").remove();
     $("body").append("<div id='body'></div>");
-    //hey, you know why we need this ?
-    
     //save json data to temporer var, init variable needed (including window size)
     //show first children only, update view, and restore scroll position
     root = treeLinked;
@@ -679,8 +677,6 @@ $(document).ready(function(){
     var nodes = tree
       .nodes(root)
       .reverse();
-    //Normalize for fixed-depth
-    nodes.forEach(function(d) {d.y = d.depth * lLine;});
     // Update the nodes?
     var node = vis
       .selectAll("g.node")
@@ -784,9 +780,8 @@ $(document).ready(function(){
     // Transition nodes to their new position.
     var nodeUpdate = node.transition()
       .duration(duration)
-      .attr("transform", function(d) {return "translate(" + d.y + "," + d.x + ")";});
-    //
-    /*nodeUpdate.selectAll("foreignObject,rect,text")
+      .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; });
+    nodeUpdate.selectAll("foreignObject,rect,text")
       .attr("transform", function(d) {
         var txtLine = getLine(d.kpiName);
         var rotateDeg = d.x - 90;
@@ -811,7 +806,7 @@ $(document).ready(function(){
         return "rotate(" + (-rotateDeg) + ")" +
                 (rotateDeg < -90 || rotateDeg > 90 ?
                   "translate(-" + (nameLength*6 + 20) + ",-" +
-                  (25 + (15*txtLine)) + ")" : "");});*/
+                  (25 + (15*txtLine)) + ")" : "");});
     //update polyline
     nodeUpdate.select("polygon")
       .style("opacity",function(d){return d._children ? ".8":"0";});
@@ -857,6 +852,13 @@ $(document).ready(function(){
       d.y0 = d.y;
       });
   }
+
+  /*function toggleAll(d) {
+    if (d.children) {
+      d.children.forEach(toggleAll);
+      toggle(d);
+    }
+  }*/
 
   // Toggle children.
   function toggle(d) {
@@ -904,10 +906,11 @@ $(document).ready(function(){
 
   function initTreeVariable() {
       //init line
-        diagonal = d3
-          .svg
-          .diagonal()
-          .projection(function(d) {return [d.y, d.x];});
+      diagonal = d3
+        .svg
+        .diagonal
+        .radial()
+        .projection(function(d) {return [d.y, d.x/180*Math.PI];});
       //init tooltip
       tooltip = d3
         .select("#body")
@@ -923,26 +926,25 @@ $(document).ready(function(){
       //sizing tree
       var depth = 0;
       var depthTemp = 0;
+      var nodeCount = 0;
       setDepth(root);
-      var stack = root.children.length;
-      var tempW = (rCircle+lLine)*depth;
-      var tempH = stack*(m[0]+m[2]);
-      w =  tempW > minW ? tempW : minW;
-      h = tempH > minH ? tempH : minH;
-      //x,y node start position
+      setNodeCount(root);
+      var tempR = (rCircle+radius)*depth;
+      w =  tempR > minW ? tempR : minW;
+      h = tempR > minH ? tempR : minH;
       root.x0 = h / 2;
       root.y0 = 0;
       tree = d3
         .layout
-          .tree()
-          .size([h, w]);
+        .tree()
+        .size([360, (nodeCount < 10 ? radius/3 : (nodeCount < 60 ? radius/3 : radius))]);
       vis = d3
         .select("#body")
         .append("svg:svg")
         .attr("width", w + m[1] + m[3])
         .attr("height", h + m[0] + m[2])
         .append("svg:g")
-        .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+        .attr("transform", "translate(" + w/2 + "," + h/2 + ")");
       //gradient color
       linGradRed = vis
         .append("svg:defs")
@@ -1061,6 +1063,16 @@ $(document).ready(function(){
         }
         depthTemp++;
       }
+      
+      function setNodeCount(obj) {
+        if(typeof obj === "object") {
+          nodeCount++;
+          $.each(obj,function(key,val) {
+            if(val !== null)
+              setNodeCount(val);
+          });
+        }
+      }
   }
   
   /* *** */
@@ -1157,8 +1169,8 @@ $(document).ready(function(){
 
   //set tree view default position
   function setDefTreeView() {
-    $(window).scrollLeft(0);
-    $(window).scrollTop(h/3);
+    $(window).scrollLeft(w/4);
+    $(window).scrollTop(h/4);
   }
   
   // Set where clause statement to limit data loading/printing

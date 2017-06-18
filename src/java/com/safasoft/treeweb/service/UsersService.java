@@ -8,8 +8,8 @@ package com.safasoft.treeweb.service;
 import com.safasoft.treeweb.bean.support.ListKpi;
 import com.safasoft.treeweb.bean.support.TableContent;
 import com.safasoft.treeweb.bean.Users;
-import com.safasoft.treeweb.bean.support.ListBean;
 import com.safasoft.treeweb.bean.support.TableValue;
+import com.safasoft.treeweb.bean.support.UploadTableBean;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import java.util.List;
 
@@ -29,5 +29,5 @@ public interface UsersService {
   List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn, int currPageNoFind);
   List<TableValue> getListTableValue(String tableName, String columnsSerialExt, String orderByColumn, String searchText, int currPageNoFind);
   Integer getPageNo(String tableName, String id, String columnsSerialExt, String orderByColumn);
-  List<ListBean> getListUploadTableByUser(String userAccess);
+  List<UploadTableBean> getListUploadTableByUser(String userAccess);
 }

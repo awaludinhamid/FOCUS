@@ -43,50 +43,6 @@ ul>li[id*=select]:not([id=selectkpi])>span {
   cursor: default;
 }
 
-/*.table tbody tr:nth-child(10n+1) {
-  animation: table-row-anime 20s linear infinite;
-}
-.table tbody tr:nth-child(10n+2) {
-  animation: table-row-anime 20s linear infinite 2s;
-}
-.table tbody tr:nth-child(10n+3) {
-  animation: table-row-anime 20s linear infinite 4s;
-}
-.table tbody tr:nth-child(10n+4) {
-  animation: table-row-anime 20s linear infinite 6s;
-}
-.table tbody tr:nth-child(10n+5) {
-  animation: table-row-anime 20s linear infinite 8s;
-}
-.table tbody tr:nth-child(10n+6) {
-  animation: table-row-anime 20s linear infinite 10s;
-}
-.table tbody tr:nth-child(10n+7) {
-  animation: table-row-anime 20s linear infinite 12s;
-}
-.table tbody tr:nth-child(10n+8) {
-  animation: table-row-anime 20s linear infinite 14s;
-}
-.table tbody tr:nth-child(10n+9) {
-  animation: table-row-anime 20s linear infinite 16s;
-}
-.table tbody tr:nth-child(10n+10) {
-  animation: table-row-anime 20s linear infinite 18s;
-}
-@keyframes table-row-anime {
-  0% {opacity: 0.5; transform: scale(1.05);}
-  10% {opacity: 1; transform: scale(1);}
-  20% {opacity: 1; transform: scale(1);}
-  30% {opacity: 1; transform: scale(1);}
-  40% {opacity: 1; transform: scale(1);}
-  50% {opacity: 1; transform: scale(1);}
-  60% {opacity: 1; transform: scale(1);}
-  70% {opacity: 1; transform: scale(1);}
-  80% {opacity: 1; transform: scale(1);}
-  90% {opacity: 1; transform: scale(1);}
-  100% {opacity: 0.5; transform: scale(1.05);}
-}*/
-
 div#addition-option {
 }
 div#data {

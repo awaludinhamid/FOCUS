@@ -10,7 +10,7 @@ $(document).ready(function(){
     //
     var m = [100, 80, 100, 80], //svg padding to tree(up,left,down,right)
         minW = 1360, //min tree diagram width
-        minH = 768, //min tree diagram height
+        minH = 2000, //min tree diagram height
         w = 0, //tree diagram width
         h = 0, //tree diagram height
         cnt = 0; //node count
@@ -48,6 +48,11 @@ $(document).ready(function(){
     var extType;//download file extension
     //hardcode top position of hover info depend on various zooming, next time might be replaced with formulation found
     var arrTopPoint = {1:100,0.9:200,0.8:340,0.7:520,0.6:770,0.5:1100,0.4:1600,0.3:2420,0.2:4100,0.1:9100};
+    //check browser used
+    var isChrome = navigator.userAgent.indexOf("Chrome") > -1;
+    var isMS = (navigator.userAgent.indexOf("MSIE") > -1 ) || (!!document.documentMode === true );
+    //top half position of tree
+    var topHalfPos;
     /* *** */
 
     /* MEMBER & DEPARTMENT GENERATE */
@@ -363,6 +368,7 @@ $(document).ready(function(){
         expandAll();
       }
       $(this).toggleClass("glyphicon-resize-small").toggleClass("glyphicon-resize-full");
+      setDefTreeView();
     });
 
     //click on map closing button (next future?)
@@ -444,6 +450,26 @@ $(document).ready(function(){
 
     //update tree object
     function update(source) {
+      //resize tree based on the depth
+      var myLength = 0;
+      var depth = 0;
+      function setMyLength(obj) {
+        if (obj.children) {
+            obj.children.forEach(function (d) {
+                myLength++;
+                setMyLength(d);
+                if (myLength > depth) {
+                    depth = myLength;
+                }
+                myLength = 0;
+            });
+        }
+        myLength++;
+      }
+      setMyLength(root);
+      tree = tree.size([depth/5*h,w]);
+      if(depth < 4) topHalfPos = (depth/5*h) / 2;
+      
       var duration = d3.event && d3.event.altKey ? 5000 : 500;  //node transition duration
       //Compute the new tree layout
       var nodes = tree
@@ -463,48 +489,114 @@ $(document).ready(function(){
         .attr("transform", function(d) {return "translate(" + source.y0 + "," + source.x0 + ")";});
 
       //put growth value on foreignObject or text node (if IE browser) and its properties
-      if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) {//If IE
+      //if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) {//If IE
+      if(isMS) {
+        //only for background
+        //square 1
         nodeEnter
-          .append("svg:rect")//only for background
-          .attr("width",function(d) {return (
-            d.name.length < 10 && d.name.toUpperCase() === d.name ? 9 :
-            (d.name.length < 10 || d.name.toUpperCase() === d.name? 8 : 6)) * (d.name.length);})
-          .attr("height", 20)
+          .append("svg:rect")
+          .attr("width",function(d) {
+            return  getTxtLen(d.name,numberFormat(d.speedA)) + 30;})
+          .attr("height", 43)
           .attr("rx", 5)
           .attr("ry", 5)
-          //filled object with color related to its value, except root has additional color if it not in breakdown view
-          .style("fill", function(d){
-            if(kpiBrkdwnFlag == 0 && d == root) {
-                return "purple";
-              } else {
-                if(d.button == "btn btn-success btn-sm") {
-                  return "green";
-                } else if(d.button == "btn btn-danger btn-sm") {
-                  return "red";
-                } else if(d.button == "btn btn-warning btn-sm") {
-                  return "orange";
-                } else {
-                  return "grey";
-                }
-              }})
-          .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
           .attr("y", "4")
           .attr("x", function(d) {return d.systemId === 3 ? "40" : "13";})
+          //filled object with color related to its value, except root has additional color if it not in breakdown view
+          .style("fill", function(d){return d.colorSquare;})
+          .style("fill-opacity", "0.9")
+          .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
           //show info by breakdown or detail depend on flag          
           .on("click",function(d) {
             showInfo(root,d);
-          });
+          })
+          ;
+        //arrow in square 1
+        nodeEnter.append("svg:polygon")
+          .attr("points", function(d) {
+            var txtLen =  getTxtLen(d.name,numberFormat(d.speedA)) + (d.systemId === 3 ? 27 : 0);
+            if(d.colorIcon === "green")
+              return (20+txtLen)+",20 "+(30+txtLen)+",15 "+(40+txtLen)+",20 "+(35+txtLen)+",20 "+(35+txtLen)+",30 "+(25+txtLen)+",30 "+(25+txtLen)+",20";
+            if(d.colorIcon === "red")
+              return (20+txtLen)+",25 "+(30+txtLen)+",30 "+(40+txtLen)+",25 "+(35+txtLen)+",25 "+(35+txtLen)+",15 "+(25+txtLen)+",15 "+(25+txtLen)+",25";
+            return (20+txtLen)+",22 "+(20+txtLen)+",28 "+(40+txtLen)+",28 "+(40+txtLen)+",22";
+          })
+          .attr("fill",function(d){return d.colorIcon;})
+          .attr("id","poly-arrow-out")
+          .attr("stroke","white")
+          .attr("stroke-width","1px")
+          .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
+          .on("click",function(d) {
+            showInfo(root,d);
+          })
+          ;
+        //text in square 1
         nodeEnter
           .append("svg:text")
           .text(function(d) {return d.name;})
           .style("font-size","10px")
-          .attr("fill",function(d){if(d.button == "btn btn-default btn-sm") return "black"; else return "white";})
+          .attr("fill","white")
           .attr("y", "17")
           .attr("x", function(d) {return d.systemId === 3 ? "44" : "17";})
           .style("cursor",function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
           .on("click",function(d) {
             showInfo(root,d);
-          });
+          })
+          ;
+        //square 2
+        nodeEnter
+          .append("svg:rect")//only for background
+          .attr("width",function(d) {
+            return getTxtLen(d.name,numberFormat(d.speedA));})
+          .attr("height", 21)
+          .attr("rx", 2)
+          .attr("ry", 2)
+          .attr("y", "22")
+          .attr("x", function(d) {return d.systemId === 3 ? "40" : "13";})
+          .attr("stroke","white")
+          .attr("stroke-width","1px")
+          //filled object with color related to its value, except root has additional color if it not in breakdown view
+          .style("fill", function(d){return d.colorSquareIn;})
+          .style("fill-opacity", "1")
+          .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
+          .on("click",function(d) {
+            showInfo(root,d);
+          })
+          ;
+        //arrow in square 2
+        nodeEnter.append("svg:polygon")
+          .attr("points", function(d) {
+            var leftSpace =  d.systemId === 3 ? 27 : 0;
+            if(d.colorIconIn === "green")
+              return (18+leftSpace)+",33 "+(24+leftSpace)+",27 "+(30+leftSpace)+",33 "+(26+leftSpace)+",33 "+(26+leftSpace)+",39 "+
+                    (22+leftSpace)+",39 "+(22+leftSpace)+",33";
+            if(d.colorIconIn === "red")
+              return (18+leftSpace)+",33 "+(24+leftSpace)+",39 "+(30+leftSpace)+",33 "+(26+leftSpace)+",33 "+(26+leftSpace)+",27 "+
+                    (22+leftSpace)+",27 "+(22+leftSpace)+",33";
+            return (18+leftSpace)+",31 "+(18+leftSpace)+",35 "+(30+leftSpace)+",35 "+(30+leftSpace)+",31";
+          })
+          .attr("fill",function(d){return d.colorIconIn;})
+          .attr("id","poly-arrow-in")
+          .attr("stroke","white")
+          .attr("stroke-width","0.5px")
+          .style("cursor", function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
+          .on("click",function(d) {
+            showInfo(root,d);
+          })
+          ;
+        //text in square 2
+        nodeEnter
+          .append("svg:text")
+          .text(function(d) {return numberFormat(d.speedA);})
+          .style("font-size","10px")
+          .attr("fill","white")
+          .attr("y", "37")
+          .attr("x", function(d) {return d.systemId === 3 ? "60" : "33";})
+          .style("cursor",function(d) {return (kpiBrkdwnFlag == 0 && d == root) ? "default" : "pointer";})
+          .on("click",function(d) {
+            showInfo(root,d);
+          })
+          ;
         //add link to direct to key process
         nodeEnter
           .append("svg:text")
@@ -521,16 +613,29 @@ $(document).ready(function(){
       } else {
         nodeEnter
           .append("svg:foreignObject")
-          .attr("width", function(d) {if(d.name.length * 10 > 320) return 320; return (d.name.length < 10? 15 : 8) * (d.name.length);})
-          .attr("height", "22px")
+          //.attr("width", "280px")//function(d) {if(d.name.length * 10 > 320) return 320; return (d.name.length < 10? 15 : 8) * (d.name.length);})  
+          //.attr("height", "42px")
           .attr("id","foreignObject")
           .attr("y", "0em")
           .attr("x", function(d) {return d.systemId === 3 ? "2.3em" : "1.0em";})
           .style("opacity","0.8")
           //filled object with color and icon related to its value, except root has additional color if it not in breakdown view
           .html(function(d) {
-            var htmlElement = "<button class='"+d.button+"' title='Show breakdown'>"+              
-              d.name+"&nbsp;"+(navigator.userAgent.indexOf("Chrome") == -1 ? "<span class='"+d.icon+"'></span>" : "")+"</button>"; //If Chrome
+            var htmlElement = //"<div>" +
+              "<body><button class='btn"+/*d.button+*/"' style='background-color: "+d.colorSquare+"' title='Show breakdown'>"+ 
+                "<table class='table-foreign'>"+
+                  "<tbody>"+
+                    "<tr>"+
+                      "<td colspan='2'>"+d.name+"</td>"+
+                      "<td rowspan='2'>&nbsp;<span class='"+d.icon+"' style='background-color: "+d.colorIcon+"'></span></td>"+
+                    "</tr>"+
+                    "<tr style='background-color: "+d.colorSquareIn+"'>"+
+                      "<td><span class='"+d.iconIn+"'></span></td>"+
+                      "<td>"+numberFormat(d.speedA)+"</td>"+
+                    "</tr>"+
+                  "</tbody>"+
+                "</table>"+
+              "</button></body>";
             if(kpiBrkdwnFlag == 0) {
               if(d == root) {
                 htmlElement = htmlElement.replace("title='Show breakdown'","style='cursor: not-allowed'");
@@ -552,7 +657,26 @@ $(document).ready(function(){
           })
           .on("click",function(d) {
             showInfo(root,d);
+          })
+          .on("mouseover", function(d) {
+            $(this).find("table tr:first-child>td:first-child").css("max-width","500px");
+            var buttonWidth = $(this).children("button").css("width") == null ? 0 : Number($(this).children("button").css("width").replace("px",""));
+            buttonWidth = isChrome ? buttonWidth + 50 : buttonWidth;
+            $(this).attr("width",buttonWidth + "px");
+          })
+          .on("mouseout", function(d) {
+            $(this).find("table tr:first-child>td:first-child").css("max-width","200px");
+            var buttonWidth = $(this).children("button").css("width") == null ? 0 : Number($(this).children("button").css("width").replace("px",""));
+            buttonWidth = isChrome ? buttonWidth + 50 : buttonWidth;
+            $(this).attr("width",buttonWidth + "px");
           });
+        //
+        $("foreignObject").each(function() {
+          var buttonWidth = $(this).children("button").css("width") == null ? 0 : Number($(this).children("button").css("width").replace("px",""));
+          buttonWidth = isChrome ? buttonWidth + 50 : buttonWidth;
+          $(this).attr("width",buttonWidth + "px");
+          $(this).attr("height",$(this).children("button").css("height"));
+        });
         //add link to direct to key process
         nodeEnter
           .append("svg:foreignObject")
@@ -561,16 +685,15 @@ $(document).ready(function(){
           .attr("y", "0em")
           .attr("x", "1.0em")
           .html(function(d) {
-            var iconClass = navigator.userAgent.indexOf("Chrome") === -1 ? "class='glyphicon glyphicon-link'" : "";
-            var linkTxt = navigator.userAgent.indexOf("Chrome") === -1 ? "" : "&circlearrowleft;";
             return d.systemId === 3 ?
-              "<a "+iconClass+" href='../../apps/keypro/application?kpiId="+d.kpi+"' target='_blank' title='Link to process'>"+linkTxt+"</a>":"";});
+              "<body><a class='glyphicon glyphicon-link' href='../../apps/keypro/application?kpiId="+d.kpi+"' target='_blank' title='Link to process'></a></body>":"";});
       }
       
       //polyline nodes and its properties
       nodeEnter.append("svg:polygon")
         .attr("points", "14,-4 14,4 16,4 16,9 20,0 16,-9 16,-4")
         .attr("fill",function(d){return d.color;})
+        .attr("id","poly-arrow")
         ;
       //circle nodes and its properties
       nodeEnter
@@ -616,14 +739,19 @@ $(document).ready(function(){
                       "<table class='table-data-hover'>"+
                         "<thead><tr><td>"+d.name+"</td><td>Value</td></tr></thead>"+
                         "<tbody>"+
-                        "<tr><td>Target</td><td>"+numberFormat(d.target,suffix,prefix)+"</td></tr>" +
-                        "<tr><td>Batas Atas</td><td>"+numberFormat(d.batasAtas,suffix1,prefix1)+"</td></tr>" +
-                        "<tr><td>Batas Bawah</td><td>"+numberFormat(d.batasBawah,suffix1,prefix1)+"</td></tr>" +
-                        "<tr><td>Actual</td><td>"+(d.satuan == "B"?(d.actual == 1?"Sudah":"Belum"):numberFormat(d.actual,suffix,prefix))+"</td></tr>" +
-                        "<tr><td>Achieve</td><td>"+numberFormat(d.achieve,"%")+"</td></tr>" +
-                        "<tr><td nowrap>Last Month</td><td>"+numberFormat(d.lastMonth,suffix,prefix)+"</td></tr>" +
+                        "<tr><td>Actual M-1</td><td>"+(d.satuan == "B"?(d.lastMonth == 1?"Sudah":"Belum"):numberFormat(d.lastMonth,suffix,prefix))+"</td></tr>" +
+                        "<tr><td>Achieve M-1</td><td>"+numberFormat(d.achieveLastMonth,"%")+"</td></tr>" +
+                        "<tr><td>Target M</td><td>"+numberFormat(d.target,suffix,prefix)+"</td></tr>" +
+                        "<tr><td>Actual M</td><td>"+(d.satuan == "B"?(d.actual == 1?"Sudah":"Belum"):numberFormat(d.actual,suffix,prefix))+"</td></tr>" +
+                        "<tr><td>Achieve M</td><td>"+numberFormat(d.achieve,"%")+"</td></tr>" +
+                        //"<tr><td nowrap>Last Month</td><td>"+numberFormat(d.lastMonth,suffix,prefix)+"</td></tr>" +
                         "<tr><td>Growth</td><td>"+numberFormat(d.growth,"%")+"</td></tr>"+
-                        "<tr><td>Populate</td><td>"+d.datePopulate.replace(" ","<br>")+"</td></tr>"+
+                        "<tr><td>Proyeksi</td><td>"+numberFormat(d.proyeksi,suffix,prefix)+"</td></tr>" +
+                        "<tr><td>Actual H-2</td><td>"+(d.satuan == "B"?(d.actualBeforeYest == 1?"Sudah":"Belum"):
+                                                      numberFormat(d.actualBeforeYest,suffix,prefix))+"</td></tr>" +
+                        "<tr><td>Achieve Proyeksi</td><td>"+numberFormat(d.achieveProyeksi,suffix,prefix)+"</td></tr>" +
+                        "<tr><td>Tgl Proses</td><td>"+d.datePopulate.replace(" ","<br>")+"</td></tr>"+
+                        "<tr><td>Kpi Id</td><td>"+d.kpi+"</td></tr>"+
                         "</tbody>"+
                       "</table>"+
                     "</div>")
@@ -696,7 +824,7 @@ $(document).ready(function(){
         .duration(duration)
         .attr("transform", function(d) {return "translate(" + d.y + "," + d.x + ")";});
       //update polyline
-      nodeUpdate.select("polygon")
+      nodeUpdate.select("polygon#poly-arrow")
         .style("opacity",function(d){return d._children ? ".8":"0";});
 
       // Transition exiting nodes to the parent's new position.
@@ -780,9 +908,16 @@ $(document).ready(function(){
 
     //collapse children of all nodes
     function collapseAll(){
-      root.children.forEach(collapse);
+      if(root.children)
+        root.children.forEach(collapse);
       //collapse(root);
       update(root);
+    }
+    
+    //in IE, we need calculate text length first
+    function getTxtLen(txt1,txt2) {
+      var txtLen = txt1.length > (txt2.length + 3) ? txt1.length : (txt2.length + 3);
+      return (txtLen > 200 ? 200 : (txtLen < 10 ? 10 : txtLen)) * (txt1 === txt1.toUpperCase ? 8 : 6);
     }
 
     //init tree variable
@@ -808,13 +943,14 @@ $(document).ready(function(){
         var depth = 0;
         var depthTemp = 0;
         setDepth(root);
-        var stack = root.children.length;
+        var stack = root.children? root.children.length : 1;
         var tempW = (rCircle+lLine)*depth;
-        var tempH = kpiBrkdwnFlag === 0 ? stack*(m[0]+m[2]) : stack*(m[0]+m[2])/2;
+        var tempH = kpiBrkdwnFlag === 0 ? stack * (m[0]+m[2]) * 2.0 : stack * (m[0]+m[2]) * 1.0;
         w =  tempW > minW ? tempW : minW;
         h = tempH > minH ? tempH : minH;
         //x,y node start position
-        root.x0 = h / 2;
+        topHalfPos = h / 2;
+        root.x0 = topHalfPos;
         root.y0 = 0;
         //created tree object
         tree = d3
@@ -1015,16 +1151,21 @@ $(document).ready(function(){
       var suffix = dataDetTemp.satuan == "P" ? "%" : ""; //satuan, mis. %
       var prefix = dataDetTemp.satuan == "A" ? "Rp " : ""; //simbol mata uang
       var suffix1 = dataDetTemp.achieve == null ? suffix : "%"; //satuan, mis. % di batas atas/bawah
-      var prefix1 = dataDetTemp.achieve == null ? prefix : ""; //simbol mata uang di batas atas/bawah
+      var prefix1 = dataDetTemp.achieve == null ? prefix : ""; //simbol mata uang di batas atas/bawah  
       $("#mdl-detail .modal-body #title").text(dataDetTemp.name);
+      $("#mdl-detail .modal-body #actualLastMonth").text((dataDetTemp.satuan == "B" ? (dataDetTemp.lastMonth == 1 ? "Sudah" : "Belum") :
+              numberFormat(dataDetTemp.lastMonth,suffix,prefix)));
+      $("#mdl-detail .modal-body #achieveLastMonth").text(numberFormat(dataDetTemp.achieveLastMonth,"%"));
       $("#mdl-detail .modal-body #target").text(numberFormat(dataDetTemp.target,suffix,prefix));
-      $("#mdl-detail .modal-body #batasAtas").text(numberFormat(dataDetTemp.batasAtas,suffix1,prefix1));
-      $("#mdl-detail .modal-body #batasBawah").text(numberFormat(dataDetTemp.batasBawah,suffix1,prefix1));
       $("#mdl-detail .modal-body #actual").text((dataDetTemp.satuan == "B" ? (dataDetTemp.actual == 1 ? "Sudah" : "Belum") :
               numberFormat(dataDetTemp.actual,suffix,prefix)));
       $("#mdl-detail .modal-body #achieve").text(numberFormat(dataDetTemp.achieve,"%"));
-      $("#mdl-detail .modal-body #lastMonth").text(numberFormat(dataDetTemp.lastMonth,suffix,prefix));
+      //$("#mdl-detail .modal-body #lastMonth").text(numberFormat(dataDetTemp.lastMonth,suffix,prefix));
       $("#mdl-detail .modal-body #growth").text(numberFormat(dataDetTemp.growth,"%"));
+      $("#mdl-detail .modal-body #proyeksi").text(numberFormat(dataDetTemp.proyeksi,suffix,prefix));
+      $("#mdl-detail .modal-body #actualBeforeYest").text((dataDetTemp.satuan == "B" ? (dataDetTemp.actualBeforeYest == 1 ? "Sudah" : "Belum") :
+              numberFormat(dataDetTemp.actualBeforeYest,suffix,prefix)));
+      $("#mdl-detail .modal-body #achieveProyeksi").text(numberFormat(dataDetTemp.achieveProyeksi,suffix,prefix));
       $("#mdl-detail .modal-body #populate").text(dataDetTemp.datePopulate);
       $("#mdl-detail").modal("show");
     }
@@ -1114,7 +1255,7 @@ $(document).ready(function(){
     //set tree view default position
     function setDefTreeView() {
       $(window).scrollLeft(0);
-      $(window).scrollTop(kpiBrkdwnFlag === 0 ? h/2 : h/3);
+      $(window).scrollTop(kpiBrkdwnFlag === 0 ? topHalfPos : topHalfPos*2/3);
     }
     
     //get label of current option, used as report parameter

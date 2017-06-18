@@ -13,6 +13,7 @@ import com.safasoft.treeweb.bean.Users;
 import com.safasoft.treeweb.bean.support.ColumnCons;
 import com.safasoft.treeweb.bean.support.ListBean;
 import com.safasoft.treeweb.bean.support.TableValue;
+import com.safasoft.treeweb.bean.support.UploadTableBean;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import com.safasoft.treeweb.util.BaseDAO;
 import java.math.BigDecimal;
@@ -515,16 +516,16 @@ public class UsersDAO extends BaseDAO<Users> {
    * @param userAccess
    * @return 
    */
-  public List<ListBean> getListUploadTableByUser(String userAccess) {
+  public List<UploadTableBean> getListUploadTableByUser(String userAccess) {
     return sessionFactory.getCurrentSession().createSQLQuery(
-            "SELECT name, table_name code " +
+            "SELECT id, name, table_name, description, user_access, schema_name, db_link " +
               "FROM ff_upload_table " +
               "WHERE user_access = :userAccess " +
               "OR :userAccess IN ( " +
                 "SELECT user_name " +
                   "FROM users " +
                   "WHERE user_access = 1)")
-            .addEntity(ListBean.class)
+            .addEntity(UploadTableBean.class)
             .setString("userAccess",userAccess)
             .list();
   }

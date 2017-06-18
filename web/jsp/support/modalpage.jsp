@@ -56,28 +56,37 @@
               </thead>
               <tbody>
                 <tr>
-                  <td>Target</td><td id="target" style="text-align: right"></td>
+                  <td>Actual M-1</td><td id="actualLastMonth" style="text-align: right"></td>
                 </tr>
                 <tr>
-                  <td>Batas Atas</td><td id="batasAtas" style="text-align: right"></td>
+                  <td>Achieve M-1</td><td id="achieveLastMonth" style="text-align: right"></td>
                 </tr>
                 <tr>
-                  <td>Batas Bawah</td><td id="batasBawah" style="text-align: right"></td>
+                  <td>Target M</td><td id="target" style="text-align: right"></td>
                 </tr>
                 <tr>
-                  <td>Actual</td><td id="actual" style="text-align: right"></td>
+                  <td>Actual M</td><td id="actual" style="text-align: right"></td>
                 </tr>
                 <tr>
-                  <td>Achieve</td><td id="achieve" style="text-align: right"></td>
+                  <td>Achieve M</td><td id="achieve" style="text-align: right"></td>
                 </tr>
-                <tr>
+                <!--tr>
                   <td nowrap>Last Month</td><td id="lastMonth" style="text-align: right"></td>
-                </tr>
+                </tr-->
                 <tr>
                   <td>Growth</td><td id="growth" style="text-align: right"></td>
                 </tr>
                 <tr>
-                  <td>Populate</td><td id="populate" style="text-align: center"></td>
+                  <td>Proyeksi</td><td id="proyeksi" style="text-align: right"></td>
+                </tr>
+                <tr>
+                  <td>Actual H-2</td><td id="actualBeforeYest" style="text-align: right"></td>
+                </tr>
+                <tr>
+                  <td>Achieve Proyeksi</td><td id="achieveProyeksi" style="text-align: right"></td>
+                </tr>
+                <tr>
+                  <td>Tgl Proses</td><td id="populate" style="text-align: center"></td>
                 </tr>
               </tbody>
             </table>

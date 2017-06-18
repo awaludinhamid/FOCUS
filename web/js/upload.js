@@ -25,7 +25,10 @@ $(document).ready(function(){
       file, //file to upload
       headers, //upload file header
       values; //upload file content
-  
+  var tableName = "",
+      schemaName = "",
+      dbLink = "";
+      
   //init process
   generateOption();
   /* *** */
@@ -47,7 +50,7 @@ $(document).ready(function(){
       if(thisId !== prevId) {
         loadingStateChange("show");
         $("#uploadSelect ul li#"+prevId+" span").attr("class",unpickStyle);
-        currId = thisId;
+        tableName = thisId;
         currPageNo = 1;
         setTabelTitle();
         clearUploadFile();
@@ -176,7 +179,7 @@ $(document).ready(function(){
     loadingStateChange("show");
     //upload file into database
     var execFunc = function() {
-      $.post("../../apps/data/upload",{tableName: currId, columnsSerial: columnsSerial},function(data,status) {
+      $.post("../../apps/data/upload",{tableName: tableName, schemaName:schemaName, dbLink:dbLink, columnsSerial: columnsSerial},function(data,status) {
         if (status === "success") {
           $(".nav-tabs a[href=#current-data]").tab("show");
           generateData();
@@ -217,12 +220,18 @@ $(document).ready(function(){
             return false;       
           }
           for(var idx = 0; idx < data.length; idx++) {
+            var addDataArr = [
+              {objName:"schema-name",objVal:data[idx].schemaName},
+              {objName:"db-link",objVal:data[idx].dbLink}
+            ];
             if(idx === 0) {
-              currId = data[idx].code;
+              tableName = data[idx].tableName;
+              schemaName = data[idx].schemaName;
+              dbLink = data[idx].dbLink;
               clearUploadFile();
-              createList("upload",data[idx].code,data[idx].name,true);
+              createListWithAddData("upload",data[idx].tableName,data[idx].name,true,addDataArr);
             } else {
-              createList("upload",data[idx].code,data[idx].name,false);
+              createListWithAddData("upload",data[idx].tableName,data[idx].name,false,addDataArr);
             }
           }
           setTabelTitle();
@@ -246,7 +255,7 @@ $(document).ready(function(){
     //re-apply angular var data
     //generate paging and its status
     var execFunc = function() {
-      $.get("../../apps/data/table",{tableName: currId, pageNo: currPageNo},function(data,status) {
+      $.get("../../apps/data/table",{tableName: tableName, schemaName: schemaName, dbLink: dbLink, pageNo: currPageNo},function(data,status) {
         if(status === "success") {
           contents = data.contents;
           columns = data.columns;
@@ -315,8 +324,9 @@ $(document).ready(function(){
   // Set table title
   function setTabelTitle() {
     $("div ul#upload li").each(function() {
-      if(this.id === currId) {
-        $("div#right-title span").html("<span class='glyphicon glyphicon-th-list'></span>&nbsp;&nbsp;"+$(this).text().trim()+" ["+currId +"]");
+      if(this.id === tableName) {
+        $("div#right-title span").html("<span class='glyphicon glyphicon-th-list'></span>&nbsp;&nbsp;"+
+                $(this).text().trim()+" ["+(schemaName === null ? "FIF_FOCUS" : schemaName)+"."+tableName +"]");
         return false;
       }
     });

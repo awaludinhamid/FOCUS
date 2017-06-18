@@ -9,15 +9,15 @@ $(document).ready(function(){
    
   /* VARIABLE DECLARATION */
   //
-  var m = [80, 120, 20, 220], //svg padding to tree(up,left,down,right)
-      minW = 2040, //min tree diagram width
-      minH = 1020, //min tree diagram height
+  var m = [100, 80, 100, 80], //svg padding to tree(up,left,down,right)
+      minW = 1360, //min tree diagram width
+      minH = 1200, //min tree diagram height
       w = 0, //tree diagram width
       h = 0, //tree diagram height
       cnt = 0; //node count
   var root, tree, diagonal, vis, tooltip, linktip, linGradRed, linGradGreen, linGradYellow, linGradCyan, linGradGrey, radGrad; //tree var holder
-  var rCircle = 10, //circle node radiant
-      radius = 600; //radial radius
+  var rCircle = 15; //circle node radiant
+  var lLine = 320; //hierarchy line length
   //
   var includeColumn = []; //storage of picked column to proceed
   var currKpiId, //current KPI
@@ -42,6 +42,9 @@ $(document).ready(function(){
       currMaxPageProg; //maximum page of progress table
   //
   var centerBackPosLeft = $(".center-back-pos").css("left"); //default position of center background
+  //
+  var isChrome = navigator.userAgent.indexOf("Chrome") > -1;
+  var isMS = (navigator.userAgent.indexOf("MSIE") > -1 ) || (!!document.documentMode === true );
   
   /* *** */
 
@@ -663,6 +666,8 @@ $(document).ready(function(){
     //clean tree contanier
     d3.selectAll("#body").remove();
     $("body").append("<div id='body'></div>");
+    //hey, you know why we need this ?
+    
     //save json data to temporer var, init variable needed (including window size)
     //show first children only, update view, and restore scroll position
     root = treeLinked;
@@ -677,6 +682,8 @@ $(document).ready(function(){
     var nodes = tree
       .nodes(root)
       .reverse();
+    //Normalize for fixed-depth
+    nodes.forEach(function(d) {d.y = d.depth * lLine;});
     // Update the nodes?
     var node = vis
       .selectAll("g.node")
@@ -689,7 +696,7 @@ $(document).ready(function(){
       .attr("transform", function(d) {return "translate(" + source.y0 + "," + source.x0 + ")";});
 
     //put growth value on foreignObject or text node (if IE browser) and its properties
-    if((navigator.userAgent.indexOf("MSIE") != -1 ) || (!!document.documentMode == true )) {//IF IE  
+    if(isMS) {//IF IE  
       nodeEnter
         .append("svg:rect")
         .attr("width", function(d) {if(d == root) return 0; return (d.kpiName.length >= 25 ? 25 : d.kpiName.length) * 6 + 32;})
@@ -738,14 +745,18 @@ $(document).ready(function(){
     } else {
       nodeEnter
         .append("svg:foreignObject")
-        .attr("width", function(d) {return ((d.kpiName.length >= 25 ? 25 : d.kpiName.length) * 6 + 32) + "px";})
-        .attr("height", function(d) { var txtLine = getLine(d.kpiName); return d == root ? "0px" : (txtLine*23+10)+"px";})
-        .attr("id","foreignObject")
+        //.attr("width", function(d) {return ((d.kpiName.length >= 25 ? 25 : d.kpiName.length) * 6 + 32) + "px";})
+        //.attr("height", function(d) { var txtLine = getLine(d.kpiName); return d == root ? "0px" : (txtLine*23+10)+"px";})
+        .attr("id","foreignObjectKeypro")
         .attr("y", "0.6em")
-        .attr("x", "-0.2em")
+        .attr("x", "0.0em")
         .style("opacity","0.8")
         .html(function(d) {
-          return "<button class='btn btn-primary btn-sm' style='font-size: 10px; padding: 3px 10px'>"+breakLongText(d.kpiName)+"</button>";
+          //return "<button class='btn btn-primary btn-sm' style='font-size: 10px; padding: 3px 10px'>"+breakLongText(d.kpiName)+"</button>";          
+          return "<body><button class='btn btn-primary btn-sm' style='font-size: 10px'>"+
+                    "<table><tbody><tr><td style='max-width: 200px; overflow-x: hidden; text-overflow: ellipsis'>"+d.kpiName+
+                    "</td></tr></tbody></table>"
+                  "</button></body>";
         })
         //regenerate option and data if fact table exist
         .on("click",function(d) {
@@ -761,7 +772,28 @@ $(document).ready(function(){
           } else {
             showMessage("W","Object table must be created first!")
           }
+        })
+        .on("mouseover", function(d) {
+          $(this).find("table tr:first-child>td:first-child").css("max-width","500px");
+          var buttonWidth = $(this).children("button").css("width") == null ? 0 : Number($(this).children("button").css("width").replace("px",""));
+          buttonWidth = isChrome ? buttonWidth + 50 : buttonWidth;
+          $(this).attr("width",buttonWidth + "px");
+        })
+        .on("mouseout", function(d) {
+          $(this).find("table tr:first-child>td:first-child").css("max-width","200px");
+          var buttonWidth = $(this).children("button").css("width") == null ? 0 : Number($(this).children("button").css("width").replace("px",""));
+          buttonWidth = isChrome ? buttonWidth + 50 : buttonWidth;
+          $(this).attr("width",buttonWidth + "px");
         });
+        //
+        setTimeout(function() {//late binding? uh..
+          $("foreignObject").each(function() {
+            var buttonWidth = $(this).children("button").css("width") == null ? 0 : Number($(this).children("button").css("width").replace("px",""));
+            buttonWidth = isChrome ? buttonWidth + 50 : buttonWidth;
+            $(this).attr("width",buttonWidth + "px");
+            $(this).attr("height",$(this).children("button").css("height"));
+          });
+        },0);
     }
     //polyline nodes and its properties
     nodeEnter.append("svg:polygon")
@@ -780,8 +812,9 @@ $(document).ready(function(){
     // Transition nodes to their new position.
     var nodeUpdate = node.transition()
       .duration(duration)
-      .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; });
-    nodeUpdate.selectAll("foreignObject,rect,text")
+      .attr("transform", function(d) {return "translate(" + d.y + "," + d.x + ")";});
+    //
+    /*nodeUpdate.selectAll("foreignObject,rect,text")
       .attr("transform", function(d) {
         var txtLine = getLine(d.kpiName);
         var rotateDeg = d.x - 90;
@@ -806,7 +839,7 @@ $(document).ready(function(){
         return "rotate(" + (-rotateDeg) + ")" +
                 (rotateDeg < -90 || rotateDeg > 90 ?
                   "translate(-" + (nameLength*6 + 20) + ",-" +
-                  (25 + (15*txtLine)) + ")" : "");});
+                  (25 + (15*txtLine)) + ")" : "");});*/
     //update polyline
     nodeUpdate.select("polygon")
       .style("opacity",function(d){return d._children ? ".8":"0";});
@@ -852,13 +885,6 @@ $(document).ready(function(){
       d.y0 = d.y;
       });
   }
-
-  /*function toggleAll(d) {
-    if (d.children) {
-      d.children.forEach(toggleAll);
-      toggle(d);
-    }
-  }*/
 
   // Toggle children.
   function toggle(d) {
@@ -906,11 +932,10 @@ $(document).ready(function(){
 
   function initTreeVariable() {
       //init line
-      diagonal = d3
-        .svg
-        .diagonal
-        .radial()
-        .projection(function(d) {return [d.y, d.x/180*Math.PI];});
+        diagonal = d3
+          .svg
+          .diagonal()
+          .projection(function(d) {return [d.y, d.x];});
       //init tooltip
       tooltip = d3
         .select("#body")
@@ -926,25 +951,26 @@ $(document).ready(function(){
       //sizing tree
       var depth = 0;
       var depthTemp = 0;
-      var nodeCount = 0;
       setDepth(root);
-      setNodeCount(root);
-      var tempR = (rCircle+radius)*depth;
-      w =  tempR > minW ? tempR : minW;
-      h = tempR > minH ? tempR : minH;
+      var stack = root.children.length;
+      var tempW = (rCircle+lLine)*depth;
+      var tempH = stack*(m[0]+m[2]) * 3;
+      w =  tempW > minW ? tempW : minW;
+      h = tempH > minH ? tempH : minH;
+      //x,y node start position
       root.x0 = h / 2;
       root.y0 = 0;
       tree = d3
         .layout
-        .tree()
-        .size([360, (nodeCount < 10 ? radius/3 : (nodeCount < 60 ? radius/3 : radius))]);
+          .tree()
+          .size([h, w]);
       vis = d3
         .select("#body")
         .append("svg:svg")
         .attr("width", w + m[1] + m[3])
         .attr("height", h + m[0] + m[2])
         .append("svg:g")
-        .attr("transform", "translate(" + w/2 + "," + h/2 + ")");
+        .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
       //gradient color
       linGradRed = vis
         .append("svg:defs")
@@ -1063,16 +1089,6 @@ $(document).ready(function(){
         }
         depthTemp++;
       }
-      
-      function setNodeCount(obj) {
-        if(typeof obj === "object") {
-          nodeCount++;
-          $.each(obj,function(key,val) {
-            if(val !== null)
-              setNodeCount(val);
-          });
-        }
-      }
   }
   
   /* *** */
@@ -1169,8 +1185,8 @@ $(document).ready(function(){
 
   //set tree view default position
   function setDefTreeView() {
-    $(window).scrollLeft(w/4);
-    $(window).scrollTop(h/4);
+    $(window).scrollLeft(0);
+    $(window).scrollTop(h/3);
   }
   
   // Set where clause statement to limit data loading/printing

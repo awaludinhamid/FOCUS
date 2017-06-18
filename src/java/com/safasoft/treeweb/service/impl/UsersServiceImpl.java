@@ -8,8 +8,8 @@ package com.safasoft.treeweb.service.impl;
 import com.safasoft.treeweb.bean.support.ListKpi;
 import com.safasoft.treeweb.bean.support.TableContent;
 import com.safasoft.treeweb.bean.Users;
-import com.safasoft.treeweb.bean.support.ListBean;
 import com.safasoft.treeweb.bean.support.TableValue;
+import com.safasoft.treeweb.bean.support.UploadTableBean;
 import com.safasoft.treeweb.bean.support.UserProfileBean;
 import com.safasoft.treeweb.dao.UsersDAO;
 import com.safasoft.treeweb.service.UsersService;
@@ -79,7 +79,7 @@ public class UsersServiceImpl implements UsersService {
   }
 
   @Override
-  public List<ListBean> getListUploadTableByUser(String userAccess) {
+  public List<UploadTableBean> getListUploadTableByUser(String userAccess) {
     return usersDAO.getListUploadTableByUser(userAccess);
   }
 

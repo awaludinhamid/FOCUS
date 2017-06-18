@@ -62,6 +62,12 @@ div#kpiMember {
 div ul li span {
 	width: 230px;
   word-spacing: -8px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+div:not(#uploadSelect) ul li span:hover {
+  overflow-x: visible;
+  width: 100%;
 }
 
 div.tooltip table td, div#dialog-message table td {
@@ -304,6 +310,35 @@ div#map iframe {
   font-weight: bold;
 }
 
+/* add on re-engineering */
+
+table.table-foreign tr>td {
+  text-align: left;
+  padding: 2px;
+  color: white;
+}
+table.table-foreign tr:first-child>td:last-child {
+  font-size: 16px;
+}
+table.table-foreign tr:first-child>td:last-child>span {
+  border-radius: 8px;
+}
+table.table-foreign td {
+  max-width: 200px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+table.table-foreign tr:last-child {
+  border-top: 1px solid white;
+  border-left: 1px solid white;
+}
+table.table-foreign tr:last-child>td {
+  border-bottom: 1px solid white;
+}
+table.table-foreign tr:last-child>td:nth-child(2) {
+  border-right: 1px solid white;
+}
+
 /* animation */
 div#period-anime {
   z-index: 10;
@@ -395,4 +430,8 @@ div#period-anime {
   0% {-webkit-transform: scale(1);}
   50% {-webkit-transform: scale(0.8);}
   100% {-webkit-transform: scale(1);}
+}
+
+.glyphicon {
+  position: static;
 }
